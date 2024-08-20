@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>生成AIの各社モデル別 API使用料計算機</title>
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  </head>
+  <body>
+    <div id="app" class="container mt-5">
+      <h1 class="mb-4">生成AIの各社モデル別 API使用料計算機</h1>
+
+<a href="https://platform.openai.com/tokenizer" target="_blank">OpenAIのトークン数計算</a>
+
+      <form @submit.prevent="calculateCosts">
+        <div class="form-group">
+          <label for="inputTokens">1回あたりの入力トークン数</label>
+          <input
+            type="number"
+            id="inputTokens"
+            v-model.number="inputTokens"
+            class="form-control"
+            placeholder="例: 1000"
+          />
+        </div>
+        <div class="form-group">
+          <label for="outputTokens">1回あたりの出力トークン数</label>
+          <input
+            type="number"
+            id="outputTokens"
+            v-model.number="outputTokens"
+            class="form-control"
+            placeholder="例: 1000"
+          />
+        </div>
+        <div class="form-group">
+          <label for="numRequests">回数</label>
+          <input
+            type="number"
+            id="numRequests"
+            v-model.number="numRequests"
+            class="form-control"
+            placeholder="例: 10"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary">計算する</button>
+      </form>
+
+      <div v-if="Object.keys(results).length" class="mt-4">
+        <h2>計算結果</h2>
+        <div v-for="(models, company) in results" :key="company" class="mb-4">
+          <h3 class="mt-4">{{ company }}</h3>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th class="model-name" style="width: 200px;">モデル</th>
+                <th class="input-price" style="width: 50px;">入力単価 ($/1M)</th>
+                <th class="output-price" style="width: 50px;">出力単価 ($/1M)</th>
+                <th class="total-cost-usd" style="width: 50px;">合計費用 ($)</th>
+                <th class="total-cost-jpy" style="width: 50px;">合計費用 (円)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="model in models" :key="model.name">
+                <td>{{ model.name }}</td>
+                <td>${{ model.inputPrice % 1 === 0 ? model.inputPrice : model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}</td>
+                <td>${{ model.outputPrice % 1 === 0 ? model.outputPrice : model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}</td>
+                <td>${{ model.costUSD % 1 === 0 ? model.costUSD : model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}</td>
+                <td>¥{{ model.costJPY % 1 === 0 ? model.costJPY : model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>為替レート: 1 USD = {{ exchangeRate }} JPY</p>
+      </div>
+    </div>
+
+    <script>
+      const app = Vue.createApp({
+        data() {
+          return {
+            inputTokens: 1000, // 入力トークン数
+            outputTokens: 1000, // 出力トークン数
+            numRequests: 1000, // 回数
+            exchangeRate: 150, // 為替レート（1 USD = 150 JPY）
+            prices: {
+              // 各社ごとのモデルと1Mトークンあたりの単価 (USD)
+              OpenAI: {
+                "gpt-4": { input: 30.0, output: 60.0 },
+                "gpt-4o": { input: 5.0, output: 15.0 },
+                "gpt-4o-2024-08-06": { input: 2.5, output: 10.0 },
+                "gpt-4o-mini": { input: 0.15, output: 0.6 },
+                "*gpt-3.5-turbo": { input: 0.5, output: 1.5 },
+              },
+              Claude: {
+                Haiku: { input: 0.25, output: 1.25 },
+                Sonnet: { input: 3.0, output: 15.0 },
+                Opus: { input: 15.0, output: 75.0 },
+              },
+              Google: {
+                // "Gemini 1.5 Flash": { input: 0.35, output: 1.05 },
+                "Gemini 1.5 Flash": { input: 0.075, output: 0.3 },
+                "Gemini 1.5 Pro": { input: 3.5, output: 10.5 },
+              },
+              Perplexity:{
+      "llama-3-sonar-small-128k-(online/chat)": {
+        "input": 0.20,
+        "output": 0.20
+      },
+      "llama-3-sonar-large-128k-(online/chat)": {
+        "input": 1.00,
+        "output": 1.00
+      },
+      "llama-3-sonar-huge-128k-(online/chat)": {
+        "input": 5.00,
+        "output": 5.00
+      }
+    }
+
+
+,
+              DeepSeek:{
+      "DeepSeek-V2": {
+        "input": 0.14,
+        "output": 0.28
+      }
+    
+
+
+      
+              }
+            },
+            results: {}, // 結果のオブジェクト
+          };
+        },
+        methods: {
+          // コスト計算を行う関数
+          calculateCosts() {
+            this.results = {}; // 結果の初期化
+
+            // 各社ごとに計算を実施
+            for (let company in this.prices) {
+              const companyModels = this.prices[company];
+              this.results[company] = [];
+
+              // 各モデルご��に計算を実施
+              for (let model in companyModels) {
+                const price = companyModels[model];
+                // 単価は1Mトークンごとなので、入力値を1Mトークン単位に変換
+                const costPerRequestUSD =
+                  (price.input * this.inputTokens) / 1e6 +
+                  (price.output * this.outputTokens) / 1e6;
+                const totalCostUSD = costPerRequestUSD * this.numRequests;
+                const totalCostJPY = totalCostUSD * this.exchangeRate;
+
+                // 計算結果を結果配列に追加
+                this.results[company].push({
+                  name: model,
+                  inputPrice: price.input,
+                  outputPrice: price.output,
+                  costUSD: totalCostUSD,
+                  costJPY: totalCostJPY,
+                });
+              }
+            }
+          },
+        },
+      });
+
+      // Vueアプリケーションのマウント
+      app.mount("#app");
+    </script>
+  </body>
+</html>
