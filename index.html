@@ -14,7 +14,9 @@
     <div id="app" class="container mt-5">
       <h1 class="mb-4">生成AIの各社モデル別 API使用料計算機</h1>
 
-<a href="https://platform.openai.com/tokenizer" target="_blank">OpenAIのトークン数計算</a>
+      <a href="https://platform.openai.com/tokenizer" target="_blank"
+        >OpenAIのトークン数計算</a
+      >
 
       <form @submit.prevent="calculateCosts">
         <div class="form-group">
@@ -57,20 +59,36 @@
           <table class="table table-bordered">
             <thead>
               <tr>
-                <th class="model-name" style="width: 200px;">モデル</th>
-                <th class="input-price" style="width: 50px;">入力単価 ($/1M)</th>
-                <th class="output-price" style="width: 50px;">出力単価 ($/1M)</th>
-                <th class="total-cost-usd" style="width: 50px;">合計費用 ($)</th>
-                <th class="total-cost-jpy" style="width: 50px;">合計費用 (円)</th>
+                <th class="model-name" style="width: 200px">モデル</th>
+                <th class="input-price" style="width: 50px">入力単価 ($/1M)</th>
+                <th class="output-price" style="width: 50px">
+                  出力単価 ($/1M)
+                </th>
+                <th class="total-cost-usd" style="width: 50px">合計費用 ($)</th>
+                <th class="total-cost-jpy" style="width: 50px">
+                  合計費用 (円)
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="model in models" :key="model.name">
                 <td>{{ model.name }}</td>
-                <td>${{ model.inputPrice % 1 === 0 ? model.inputPrice : model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}</td>
-                <td>${{ model.outputPrice % 1 === 0 ? model.outputPrice : model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}</td>
-                <td>${{ model.costUSD % 1 === 0 ? model.costUSD : model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}</td>
-                <td>¥{{ model.costJPY % 1 === 0 ? model.costJPY : model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}</td>
+                <td>
+                  ${{ model.inputPrice % 1 === 0 ? model.inputPrice :
+                  model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                </td>
+                <td>
+                  ${{ model.outputPrice % 1 === 0 ? model.outputPrice :
+                  model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                </td>
+                <td>
+                  ${{ model.costUSD % 1 === 0 ? model.costUSD :
+                  model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}
+                </td>
+                <td>
+                  ¥{{ model.costJPY % 1 === 0 ? model.costJPY :
+                  model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -93,47 +111,44 @@
                 // "gpt-4": { input: 30.0, output: 60.0 },
                 "gpt-o1-preview": { input: 15.0, output: 60.0 },
                 "gpt-o1-mini": { input: 3.0, output: 12.0 },
-                "gpt-4o": { input: 5.0, output: 15.0 },
+                "gpt-4o": { input: 2.5, output: 10.0 },
                 "gpt-4o-2024-08-06": { input: 2.5, output: 10.0 },
                 "gpt-4o-mini": { input: 0.15, output: 0.6 },
                 "*gpt-3.5-turbo": { input: 0.5, output: 1.5 },
               },
               Claude: {
-                Haiku: { input: 0.25, output: 1.25 },
-                Sonnet: { input: 3.0, output: 15.0 },
-                Opus: { input: 15.0, output: 75.0 },
+                "3.5 Haiku": { input: 0.25, output: 1.25 },
+                "3.5 Sonnet": { input: 3.0, output: 15.0 },
+                "3 Opus": { input: 15.0, output: 75.0 },
               },
               Google: {
                 // "Gemini 1.5 Flash": { input: 0.35, output: 1.05 },
                 "Gemini 1.5 Flash": { input: 0.075, output: 0.3 },
+                "Gemini 1.5 Flash-8B": { input: 0.0375, output: 0.15 },
                 "Gemini 1.5 Pro": { input: 1.25, output: 2.5 },
               },
-              Perplexity:{
-      "llama-3.1-sonar-small-128k-(online/chat)": {
-        "input": 0.20,
-        "output": 0.20
-      },
-      "llama-3.1-sonar-large-128k-(online/chat)": {
-        "input": 1.00,
-        "output": 1.00
-      },
-      "llama-3.1-sonar-huge-128k-(online/chat)": {
-        "input": 5.00,
-        "output": 5.00
-      }
-    }
+              Perplexity: {
+                "llama-3.1-sonar-small-128k-(online/chat)": {
+                  input: 0.2,
+                  output: 0.2,
+                },
+                "llama-3.1-sonar-large-128k-(online/chat)": {
+                  input: 1.0,
+                  output: 1.0,
+                },
+                "llama-3.1-sonar-huge-128k-(online/chat)": {
+                  input: 5.0,
+                  output: 5.0,
+                },
+              },
 
+              // ,
+              //         DeepSeek:{
+              // "DeepSeek-V2": {
+              //   "input": 0.14,
+              //   "output": 0.28
+              // }
 
-// ,
-      //         DeepSeek:{
-      // "DeepSeek-V2": {
-      //   "input": 0.14,
-      //   "output": 0.28
-      // }
-    
-
-
-      
               // }
             },
             results: {}, // 結果のオブジェクト
