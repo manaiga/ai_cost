@@ -146,9 +146,9 @@
                 price_url: "https://www.anthropic.com/pricing#anthropic-api",
                 api_url: "https://docs.anthropic.com/en/api/getting-started",
                 models: {
-                  "3.5 Haiku": { input: 0.25, output: 1.25 },
-                  "3.5 Sonnet": { input: 3.0, output: 15.0 },
                   "3 Opus": { input: 15.0, output: 75.0 },
+                  "3.5 Sonnet": { input: 3.0, output: 15.0 },
+                  "3.5 Haiku": { input: 0.25, output: 1.25 },
                 },
               },
               Google: {
@@ -156,9 +156,19 @@
                 price_url: "https://ai.google.dev/pricing?hl=ja#1_5flash",
                 api_url: "https://ai.google.dev/gemini-api/docs?hl=ja",
                 models: {
+                  "Gemini 1.5 Pro": { input: 1.25, output: 5 },
                   "Gemini 1.5 Flash": { input: 0.075, output: 0.3 },
                   "Gemini 1.5 Flash-8B": { input: 0.0375, output: 0.15 },
-                  "Gemini 1.5 Pro": { input: 1.25, output: 5 },
+                },
+              },
+              AWS: {
+                site_url: "https://aws.amazon.com/jp/bedrock/pricing/",
+                price_url: "https://aws.amazon.com/jp/bedrock/pricing/",
+                api_url: "https://docs.aws.amazon.com/nova/latest/userguide/getting-started-api.html",
+                models: {
+                  "Nova Pro": { input: 0.8, output: 3.2 },
+                  "Nova Lite": { input: 0.06, output: 0.24 },
+                  "Nova Micro": { input: 0.035, output: 0.14 },
                 },
               },
               Perplexity: {
@@ -167,17 +177,17 @@
                 api_url:
                   "https://docs.perplexity.ai/api-reference/chat-completions",
                 models: {
-                  "llama-3.1-sonar-small-128k-(online/chat)": {
-                    input: 0.2,
-                    output: 0.2,
+                  "llama-3.1-sonar-huge-128k-(online/chat)": {
+                    input: 5.0,
+                    output: 5.0,
                   },
                   "llama-3.1-sonar-large-128k-(online/chat)": {
                     input: 1.0,
                     output: 1.0,
                   },
-                  "llama-3.1-sonar-huge-128k-(online/chat)": {
-                    input: 5.0,
-                    output: 5.0,
+                  "llama-3.1-sonar-small-128k-(online/chat)": {
+                    input: 0.2,
+                    output: 0.2,
                   },
                 },
               },
