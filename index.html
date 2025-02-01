@@ -133,12 +133,11 @@
                 api_url:
                   "https://platform.openai.com/docs/api-reference/chat/create",
                 models: {
-                  "gpt-o1": { input: 15.0, output: 60.0 },
-                  "gpt-o1-mini": { input: 3.0, output: 12.0 },
-                  "gpt-4o": { input: 2.5, output: 10.0 },
-                  // "gpt-4o-2024-11-20": { input: 2.5, output: 10.0 },
-                  "gpt-4o-mini": { input: 0.15, output: 0.6 },
-                  // "*gpt-3.5-turbo": { input: 0.5, output: 1.5 },
+                  "o1": { input: 15.0, output: 60.0 },
+                  // "o1-mini": { input: 1.1, output: 4.40 },
+                  "o3-mini": { input: 1.1, output: 4.40 },
+                  "4o": { input: 2.5, output: 10.0 },
+                  "4o-mini": { input: 0.15, output: 0.6 },
                 },
               },
               Claude: {
@@ -148,7 +147,7 @@
                 models: {
                   "3 Opus": { input: 15.0, output: 75.0 },
                   "3.5 Sonnet": { input: 3.0, output: 15.0 },
-                  "3.5 Haiku": { input: 0.25, output: 1.25 },
+                  "3.5 Haiku": { input: 0.8, output: 4 },
                 },
               },
               Google: {
@@ -169,6 +168,18 @@
                   "Nova Pro": { input: 0.8, output: 3.2 },
                   "Nova Lite": { input: 0.06, output: 0.24 },
                   "Nova Micro": { input: 0.035, output: 0.14 },
+                },
+              },
+
+              DeepSeek: {
+                site_url: "https://deepseek.com",
+                price_url: "https://api-docs.deepseek.com/quick_start/pricing",
+                api_url: "https://api-docs.deepseek.com/",
+                models: {
+                  "DeepSeek-V3": {
+                    input: 0.14,
+                    output: 0.28,
+                  },
                 },
               },
               Perplexity: {
