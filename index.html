@@ -4,117 +4,121 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>生成AIの各社モデル別 API使用料計算機</title>
-    <link
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
     />
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   </head>
-  <body>
-    <div id="app" class="container mt-5">
-      <h1 class="mb-4">生成AIの各社モデル別 API使用料計算機</h1>
+  <body class="bg-gray-50">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-7xl">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">生成AIの各社モデル別 API使用料計算機</h1>
+      <p class="text-sm text-gray-600 mb-6">最終更新日: 2025年6月18日</p>
 
-      <a href="https://platform.openai.com/tokenizer" target="_blank"
-        >OpenAIのトークン数計算 <i class="fas fa-external-link-alt"></i
-      ></a>
+      <a href="https://platform.openai.com/tokenizer" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6">
+        OpenAIのトークン数計算 <i class="fas fa-external-link-alt ml-1"></i>
+      </a>
 
-      <form @submit.prevent="calculateCosts">
-        <div class="form-group">
-          <label for="inputTokens">1回あたりの入力トークン数</label>
-          <input
-            type="number"
-            id="inputTokens"
-            v-model.number="inputTokens"
-            class="form-control"
-            placeholder="例: 1000"
-          />
+      <form @submit.prevent="calculateCosts" class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label for="inputTokens" class="block text-sm font-medium text-gray-700 mb-2">1回あたりの入力トークン数</label>
+            <input
+              type="number"
+              id="inputTokens"
+              v-model.number="inputTokens"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="例: 1000"
+            />
+          </div>
+          <div>
+            <label for="outputTokens" class="block text-sm font-medium text-gray-700 mb-2">1回あたりの出力トークン数</label>
+            <input
+              type="number"
+              id="outputTokens"
+              v-model.number="outputTokens"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="例: 1000"
+            />
+          </div>
+          <div>
+            <label for="numRequests" class="block text-sm font-medium text-gray-700 mb-2">回数</label>
+            <input
+              type="number"
+              id="numRequests"
+              v-model.number="numRequests"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="例: 10"
+            />
+          </div>
         </div>
-        <div class="form-group">
-          <label for="outputTokens">1回あたりの出力トークン数</label>
-          <input
-            type="number"
-            id="outputTokens"
-            v-model.number="outputTokens"
-            class="form-control"
-            placeholder="例: 1000"
-          />
-        </div>
-        <div class="form-group">
-          <label for="numRequests">回数</label>
-          <input
-            type="number"
-            id="numRequests"
-            v-model.number="numRequests"
-            class="form-control"
-            placeholder="例: 10"
-          />
-        </div>
-        <button type="submit" class="btn btn-primary">計算する</button>
+        <button type="submit" class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+          計算する
+        </button>
       </form>
 
-      <div v-if="Object.keys(results).length" class="mt-4">
-        <h2>計算結果</h2>
-        <div v-for="(models, company) in results" :key="company" class="mb-4">
-          <div class="d-flex align-items-center mt-4">
-            <h3 class="">
-              <a :href="services[company].site_url" target="_blank">
-                {{ company }} <i class="fas fa-external-link-alt"></i>
+      <div v-if="Object.keys(results).length" class="space-y-8">
+        <h2 class="text-2xl font-bold text-gray-900">計算結果</h2>
+        <div v-for="(models, company) in results" :key="company" class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-wrap items-center gap-4">
+              <h3 class="text-xl font-semibold text-gray-900">
+                <a :href="services[company].site_url" target="_blank" class="hover:text-blue-600 transition-colors">
+                  {{ company }} <i class="fas fa-external-link-alt text-sm"></i>
+                </a>
+              </h3>
+              <a
+                :href="services[company].price_url"
+                target="_blank"
+                class="text-blue-600 hover:text-blue-800 text-sm transition-colors"
+              >
+                Pricing <i class="fas fa-external-link-alt"></i>
               </a>
-            </h3>
-            <a
-              :href="services[company].price_url"
-              target="_blank"
-              class="mr-4 ml-2"
-              >Pricing <i class="fas fa-external-link-alt"></i
-            ></a>
-
-            <a :href="services[company].api_url" target="_blank"
-              >API <i class="fas fa-external-link-alt"></i
-            ></a>
+              <a :href="services[company].api_url" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
+                API <i class="fas fa-external-link-alt"></i>
+              </a>
+            </div>
           </div>
 
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th class="model-name" style="width: 200px">モデル</th>
-                <th class="input-price" style="width: 50px">入力単価 ($/1M)</th>
-                <th class="output-price" style="width: 50px">
-                  出力単価 ($/1M)
-                </th>
-                <th class="total-cost-usd" style="width: 50px">合計費用 ($)</th>
-                <th class="total-cost-jpy" style="width: 50px">
-                  合計費用 (円)
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="model in models" :key="model.name">
-                <td>{{ model.name }}</td>
-                <td>
-                  ${{ model.inputPrice % 1 === 0 ? model.inputPrice :
-                  model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}
-                </td>
-                <td>
-                  ${{ model.outputPrice % 1 === 0 ? model.outputPrice :
-                  model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}
-                </td>
-                <td>
-                  ${{ model.costUSD % 1 === 0 ? model.costUSD :
-                  model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}
-                </td>
-                <td>
-                  ¥{{ model.costJPY % 1 === 0 ? model.costJPY :
-                  model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">モデル</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入力単価 ($/1M)</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">出力単価 ($/1M)</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合計費用 ($)</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合計費用 (円)</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="model in models" :key="model.name" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ model.name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${{ model.inputPrice % 1 === 0 ? model.inputPrice :
+                    model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${{ model.outputPrice % 1 === 0 ? model.outputPrice :
+                    model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${{ model.costUSD % 1 === 0 ? model.costUSD :
+                    model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ¥{{ model.costJPY % 1 === 0 ? model.costJPY :
+                    model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <p>為替レート: 1 USD = {{ exchangeRate }} JPY</p>
+        <p class="text-sm text-gray-600 bg-white rounded-lg shadow-sm p-4">
+          為替レート: 1 USD = {{ exchangeRate }} JPY
+        </p>
       </div>
     </div>
 
@@ -129,80 +133,71 @@
             services: {
               OpenAI: {
                 site_url: "https://openai.com",
-                price_url: "https://openai.com/ja-JP/api/pricing/",
-                api_url:
-                  "https://platform.openai.com/docs/api-reference/chat/create",
+                price_url: "https://openai.com/api/pricing/",
+                api_url: "https://platform.openai.com/docs",
                 models: {
-                  "o1": { input: 10.0, output: 40.0 },
-                  // "o1-mini": { input: 1.1, output: 4.40 },
-                  "o3-mini": { input: 1.1, output: 4.40 },
-                  "4.1": { input: 2.00, output: 8.0 },
-                  "4.1-mini": { input: 0.40, output: 1.6 },
-                  "4.1-nano": { input: 0.10, output: 0.4 },
-                  "4o": { input: 3.75, output: 15.0 },
-                  "4o-mini": { input: 0.30, output: 1.2 },
+                  "GPT-4.1": { input: 2.00, output: 8.00 },
+                  "GPT-4.1 mini": { input: 0.40, output: 1.60 },
+                  "GPT-4.1 nano": { input: 0.10, output: 0.40 },
+                  "OpenAI o3": { input: 2.00, output: 8.00 },
+                  "OpenAI o4-mini": { input: 1.10, output: 4.40 },
                 },
               },
               Claude: {
-                site_url: "https://claude.ai",
-                price_url: "https://www.anthropic.com/pricing#anthropic-api",
-                api_url: "https://docs.anthropic.com/en/api/getting-started",
+                site_url: "https://anthropic.com",
+                price_url: "https://docs.anthropic.com/en/docs/about-claude/pricing",
+                api_url: "https://docs.anthropic.com",
                 models: {
-                  "3 Opus": { input: 15.0, output: 75.0 },
-                  "3.7 Sonnet": { input: 3.0, output: 15.0 },
-                  "3.5 Haiku": { input: 0.8, output: 4 },
+                  "Claude Opus 4": { input: 15.00, output: 75.00 },
+                  "Claude Sonnet 4": { input: 3.00, output: 15.00 },
+                  "Claude Sonnet 3.7": { input: 3.00, output: 15.00 },
+                  "Claude Haiku 3.5": { input: 0.80, output: 4.00 },
                 },
               },
               Google: {
-                site_url: "https://ai.google.dev/gemini-api?hl=ja",
-                price_url: "https://ai.google.dev/pricing?hl=ja#1_5flash",
-                api_url: "https://ai.google.dev/gemini-api/docs?hl=ja",
+                site_url: "https://ai.google.dev",
+                price_url: "https://ai.google.dev/gemini-api/docs/pricing",
+                api_url: "https://ai.google.dev/gemini-api/docs",
                 models: {
-                  "Gemini 2.5 Flash Pro Preview": { input: 1.25, output: 10 },
-                  "Gemini 2.5 Flash Preview": { input: 0.15, output: 0.6 },
-                  "Gemini 2 Flash": { input: 0.1, output: 0.4 },
-                  "Gemini 2 Flash-Lite": { input: 0.075, output: 0.3 },
-                  "Gemini 1.5 Pro": { input: 1.25, output: 5 },
-                  "Gemini 1.5 Flash": { input: 0.075, output: 0.3 },
+                  "Gemini 2.5 Pro (≤200K)": { input: 1.25, output: 10.00 },
+                  "Gemini 2.5 Pro (>200K)": { input: 2.50, output: 15.00 },
+                  "Gemini 2.5 Flash": { input: 0.30, output: 2.50 },
+                  "Gemini 2.5 Flash-Lite": { input: 0.10, output: 0.40 },
+                  "Gemini 2.0 Flash": { input: 0.10, output: 0.40 },
+                  "Gemini 2.0 Flash-Lite": { input: 0.075, output: 0.30 },
                   "Gemini 1.5 Flash-8B": { input: 0.0375, output: 0.15 },
                 },
               },
               AWS: {
-                site_url: "https://aws.amazon.com/jp/bedrock/pricing/",
-                price_url: "https://aws.amazon.com/jp/bedrock/pricing/",
-                api_url: "https://docs.aws.amazon.com/nova/latest/userguide/getting-started-api.html",
+                site_url: "https://aws.amazon.com/bedrock/",
+                price_url: "https://aws.amazon.com/bedrock/pricing/",
+                api_url: "https://aws.amazon.com/bedrock/",
                 models: {
-                  "Nova Pro": { input: 0.8, output: 3.2 },
-                  "Nova Lite": { input: 0.06, output: 0.24 },
-                  "Nova Micro": { input: 0.035, output: 0.14 },
+                  "Amazon Nova Micro": { input: 0.035, output: 0.14 },
+                  "Amazon Nova Lite": { input: 0.06, output: 0.24 },
+                  "Amazon Nova Pro": { input: 0.80, output: 3.20 },
+                  "Amazon Nova Premier": { input: 2.50, output: 12.50 },
                 },
               },
-
               DeepSeek: {
-                site_url: "https://deepseek.com",
+                site_url: "https://www.deepseek.com",
                 price_url: "https://api-docs.deepseek.com/quick_start/pricing",
-                api_url: "https://api-docs.deepseek.com/",
+                api_url: "https://api-docs.deepseek.com",
                 models: {
-                  "DeepSeek-V3": {
-                    input: 0.14,
-                    output: 0.28,
-                  },
+                  "deepseek-chat (cache miss)": { input: 0.27, output: 1.10 },
+                  "deepseek-chat (cache hit)": { input: 0.07, output: 1.10 },
+                  "deepseek-reasoner (cache miss)": { input: 0.55, output: 2.19 },
+                  "deepseek-reasoner (cache hit)": { input: 0.14, output: 2.19 },
                 },
               },
               Perplexity: {
-                site_url: "https://perplexity.ai",
+                site_url: "https://www.perplexity.ai",
                 price_url: "https://docs.perplexity.ai/guides/pricing",
-                api_url:
-                  "https://docs.perplexity.ai/api-reference/chat-completions",
+                api_url: "https://docs.perplexity.ai",
                 models: {
-                  "Sonar Pro": {
-                    input: 3.0,
-                    output: 15.0,
-                  },
-                  "Sonar": {
-                    input: 1.0,
-                    output: 1.0,
-                  },
+                  "Sonar Reasoning": { input: 1.00, output: 5.00 },
+                  "Sonar Deep Research": { input: 2.00, output: 8.00 },
+                  "r1-1776 (offline)": { input: 2.00, output: 8.00 },
                 },
               },
             },
