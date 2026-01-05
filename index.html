@@ -2,80 +2,93 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>生成AIの各社モデル別 API使用料計算機</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-01-05 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   </head>
   <body class="bg-gray-50">
     <div id="app" class="container mx-auto px-4 py-8 max-w-7xl">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">生成AIの各社モデル別 API使用料計算機</h1>
-      <p class="text-sm text-gray-600 mb-6">最終更新日: 2025年6月18日</p>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        生成AIの各社モデル別 API使用料計算機
+      </h1>
+      <p class="text-sm text-gray-600 mb-6">
+        最終更新日: 2026年1月5日（各社の公式価格ページに基づく）
+      </p>
 
-      <a href="https://platform.openai.com/tokenizer" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6">
+      <a href="https://platform.openai.com/tokenizer" target="_blank"
+        class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6">
         OpenAIのトークン数計算 <i class="fas fa-external-link-alt ml-1"></i>
       </a>
 
-      <form @submit.prevent="calculateCosts" class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <!-- 入力フォーム：単純なトークン×回数の合算。為替は固定値（ユーザーが変更可） -->
+      <form @submit.prevent="calculateCosts"
+            class="bg-white rounded-lg shadow-md p-6 mb-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label for="inputTokens" class="block text-sm font-medium text-gray-700 mb-2">1回あたりの入力トークン数</label>
-            <input
-              type="number"
-              id="inputTokens"
-              v-model.number="inputTokens"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="例: 1000"
-            />
+            <label for="inputTokens"
+                   class="block text-sm font-medium text-gray-700 mb-2">
+              1回あたりの入力トークン数
+            </label>
+            <input type="number" id="inputTokens" v-model.number="inputTokens"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          focus:border-transparent" placeholder="例: 1000"/>
           </div>
           <div>
-            <label for="outputTokens" class="block text-sm font-medium text-gray-700 mb-2">1回あたりの出力トークン数</label>
-            <input
-              type="number"
-              id="outputTokens"
-              v-model.number="outputTokens"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="例: 1000"
-            />
+            <label for="outputTokens"
+                   class="block text-sm font-medium text-gray-700 mb-2">
+              1回あたりの出力トークン数
+            </label>
+            <input type="number" id="outputTokens" v-model.number="outputTokens"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          focus:border-transparent" placeholder="例: 1000"/>
           </div>
           <div>
-            <label for="numRequests" class="block text-sm font-medium text-gray-700 mb-2">回数</label>
-            <input
-              type="number"
-              id="numRequests"
-              v-model.number="numRequests"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="例: 10"
-            />
+            <label for="numRequests"
+                   class="block text-sm font-medium text-gray-700 mb-2">
+              回数
+            </label>
+            <input type="number" id="numRequests" v-model.number="numRequests"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          focus:border-transparent" placeholder="例: 10"/>
           </div>
         </div>
-        <button type="submit" class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+
+        <!-- 注意：ここでは“単価は標準/通常プロンプト時”。
+             200K超などの段階単価は対応外（下部に注記）。 -->
+        <button type="submit"
+                class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md
+                       hover:bg-blue-700 focus:outline-none focus:ring-2
+                       focus:ring-blue-500 focus:ring-offset-2 transition-colors">
           計算する
         </button>
       </form>
 
+      <!-- 計算結果テーブル -->
       <div v-if="Object.keys(results).length" class="space-y-8">
         <h2 class="text-2xl font-bold text-gray-900">計算結果</h2>
-        <div v-for="(models, company) in results" :key="company" class="bg-white rounded-lg shadow-md overflow-hidden">
+
+        <div v-for="(models, company) in results" :key="company"
+             class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
             <div class="flex flex-wrap items-center gap-4">
               <h3 class="text-xl font-semibold text-gray-900">
-                <a :href="services[company].site_url" target="_blank" class="hover:text-blue-600 transition-colors">
+                <a :href="services[company].site_url" target="_blank"
+                   class="hover:text-blue-600 transition-colors">
                   {{ company }} <i class="fas fa-external-link-alt text-sm"></i>
                 </a>
               </h3>
-              <a
-                :href="services[company].price_url"
-                target="_blank"
-                class="text-blue-600 hover:text-blue-800 text-sm transition-colors"
-              >
+              <a :href="services[company].price_url" target="_blank"
+                 class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
                 Pricing <i class="fas fa-external-link-alt"></i>
               </a>
-              <a :href="services[company].api_url" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
+              <a :href="services[company].api_url" target="_blank"
+                 class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
                 API <i class="fas fa-external-link-alt"></i>
               </a>
             </div>
@@ -94,31 +107,39 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="model in models" :key="model.name" class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ model.name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {{ model.name }}
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${{ model.inputPrice % 1 === 0 ? model.inputPrice :
-                    model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                        model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${{ model.outputPrice % 1 === 0 ? model.outputPrice :
-                    model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                        model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${{ model.costUSD % 1 === 0 ? model.costUSD :
-                    model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}
+                        model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ¥{{ model.costJPY % 1 === 0 ? model.costJPY :
-                    model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}
+                        model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-        <p class="text-sm text-gray-600 bg-white rounded-lg shadow-sm p-4">
-          為替レート: 1 USD = {{ exchangeRate }} JPY
-        </p>
+
+        <div class="bg-white rounded-lg shadow-sm p-4 space-y-2 text-sm text-gray-600">
+          <p>為替レート: 1 USD = {{ exchangeRate }} JPY</p>
+          <ul class="list-disc pl-5">
+            <li>Gemini 2.5 / Claude Sonnet 4.x は「入力が200Kトークン超」の場合に<strong>単価が上がる</strong>設定があります（この計算機は標準単価で計算）。</li>
+            <li>OpenAI と DeepSeek は <em>Cached input</em> 単価が別途あります（本計算では未考慮）。</li>
+            <li>Perplexity <em>Deep Research</em> は <strong>検索クエリ</strong>課金（$/1K）が別途発生します（本計算はトークン課金のみ）。</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -126,105 +147,134 @@
       const app = Vue.createApp({
         data() {
           return {
-            inputTokens: 1000, // 入力トークン数
-            outputTokens: 1000, // 出力トークン数
-            numRequests: 1000, // 回数
-            exchangeRate: 150, // 為替レート（1 USD = 150 JPY）
+            // ▼デフォルト値（任意に変更可能）
+            inputTokens: 1000,
+            outputTokens: 1000,
+            numRequests: 1000,
+            exchangeRate: 150, // 手動で更新してください
+
+            // ▼各社の公式リンクと“テキスト生成モデルのみ”の価格表
             services: {
               OpenAI: {
                 site_url: "https://openai.com",
-                price_url: "https://openai.com/api/pricing/",
+                price_url: "https://platform.openai.com/docs/pricing",
                 api_url: "https://platform.openai.com/docs",
                 models: {
-                  "GPT-4.1": { input: 2.00, output: 8.00 },
-                  "GPT-4.1 mini": { input: 0.40, output: 1.60 },
-                  "GPT-4.1 nano": { input: 0.10, output: 0.40 },
-                  "OpenAI o3": { input: 2.00, output: 8.00 },
-                  "OpenAI o4-mini": { input: 1.10, output: 4.40 },
+                  // 公式のAPI価格（$/1M tokens）
+                  // 参考: Pricing | OpenAI Platform
+                  "gpt-5.2": { input: 1.75, output: 14.00 },
+                  "gpt-5.1": { input: 1.25, output: 10.00 },
+                  "gpt-5": { input: 1.25, output: 10.00 },
+                  "gpt-5-mini": { input: 0.25, output: 2.00 },
+                  "gpt-5-nano": { input: 0.05, output: 0.40 },
+                  "gpt-5.2-pro": { input: 21.00, output: 168.00 },
+                  "gpt-5-pro": { input: 15.00, output: 120.00 },
+                  "gpt-4.1": { input: 2.00, output: 8.00 },
+                  "gpt-4.1-mini": { input: 0.40, output: 1.60 },
+                  "gpt-4.1-nano": { input: 0.10, output: 0.40 },
+                  "gpt-4o": { input: 2.50, output: 10.00 },
+                  "gpt-4o-mini": { input: 0.15, output: 0.60 },
+                  "o3": { input: 2.00, output: 8.00 },
+                  "o4-mini": { input: 2.00, output: 8.00 },
                 },
               },
+
               Claude: {
-                site_url: "https://anthropic.com",
-                price_url: "https://docs.anthropic.com/en/docs/about-claude/pricing",
+                site_url: "https://www.anthropic.com",
+                price_url: "https://console.anthropic.com/docs/en/about-claude/pricing",
                 api_url: "https://docs.anthropic.com",
                 models: {
-                  "Claude Opus 4": { input: 15.00, output: 75.00 },
-                  "Claude Sonnet 4": { input: 3.00, output: 15.00 },
-                  "Claude Sonnet 3.7": { input: 3.00, output: 15.00 },
-                  "Claude Haiku 3.5": { input: 0.80, output: 4.00 },
+                  // 公式のAPI価格（$/1M tokens）
+                  // 参考: Pricing - Claude Docs
+                  "claude-opus-4-5": { input: 15.00, output: 75.00 },
+                  "claude-opus-4-1": { input: 15.00, output: 75.00 },
+                  "claude-opus-4-0": { input: 15.00, output: 75.00 },
+                  "claude-sonnet-4-5": { input: 3.00, output: 15.00 },
+                  "claude-sonnet-4-0": { input: 3.00, output: 15.00 },
+                  "claude-haiku-4-5": { input: 1.00, output: 5.00 },
+                  "claude-haiku-3-5": { input: 0.80, output: 4.00 },
                 },
               },
+
               Google: {
                 site_url: "https://ai.google.dev",
                 price_url: "https://ai.google.dev/gemini-api/docs/pricing",
                 api_url: "https://ai.google.dev/gemini-api/docs",
                 models: {
-                  "Gemini 2.5 Pro (≤200K)": { input: 1.25, output: 10.00 },
-                  "Gemini 2.5 Pro (>200K)": { input: 2.50, output: 15.00 },
-                  "Gemini 2.5 Flash": { input: 0.30, output: 2.50 },
-                  "Gemini 2.5 Flash-Lite": { input: 0.10, output: 0.40 },
-                  "Gemini 2.0 Flash": { input: 0.10, output: 0.40 },
-                  "Gemini 2.0 Flash-Lite": { input: 0.075, output: 0.30 },
-                  "Gemini 1.5 Flash-8B": { input: 0.0375, output: 0.15 },
+                  // 公式のAPI価格（$/1M tokens）
+                  // 参考: Gemini Developer API pricing | Gemini API | Google AI for Developers
+                  "gemini-3-pro-preview": { input: 2.00, output: 12.00 },
+                  "gemini-3-flash-preview": { input: 0.50, output: 3.00 },
+                  "gemini-2.5-pro": { input: 1.25, output: 10.00 },
+                  "gemini-2.5-flash": { input: 0.30, output: 2.50 },
+                  "gemini-2.5-flash-lite": { input: 0.10, output: 0.40 },
                 },
               },
+
               AWS: {
                 site_url: "https://aws.amazon.com/bedrock/",
-                price_url: "https://aws.amazon.com/bedrock/pricing/",
-                api_url: "https://aws.amazon.com/bedrock/",
+                price_url: "https://aws.amazon.com/blogs/machine-learning/prompting-for-the-best-price-performance/",
+                api_url: "https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html",
                 models: {
-                  "Amazon Nova Micro": { input: 0.035, output: 0.14 },
-                  "Amazon Nova Lite": { input: 0.06, output: 0.24 },
-                  "Amazon Nova Pro": { input: 0.80, output: 3.20 },
-                  "Amazon Nova Premier": { input: 2.50, output: 12.50 },
+                  // 単価は$/1M換算（AWS公式ブログ/報道に基づく）
+                  "Amazon Nova Micro":   { input: 0.035, output: 0.14 },
+                  "Amazon Nova Lite":    { input: 0.06,  output: 0.24 },
+                  "Amazon Nova Pro":     { input: 0.80,  output: 3.20 },
+                  "Amazon Nova Premier": { input: 2.50,  output: 12.50 },
                 },
               },
+
               DeepSeek: {
                 site_url: "https://www.deepseek.com",
-                price_url: "https://api-docs.deepseek.com/quick_start/pricing",
+                price_url: "https://api-docs.deepseek.com/quick_start/pricing-details-usd",
                 api_url: "https://api-docs.deepseek.com",
                 models: {
+                  // 公式のAPI価格（$/1M tokens、cache miss基準）
+                  // 参考: pricing-details-usd | DeepSeek API Docs
                   "deepseek-chat (cache miss)": { input: 0.27, output: 1.10 },
-                  "deepseek-chat (cache hit)": { input: 0.07, output: 1.10 },
                   "deepseek-reasoner (cache miss)": { input: 0.55, output: 2.19 },
-                  "deepseek-reasoner (cache hit)": { input: 0.14, output: 2.19 },
                 },
               },
+
               Perplexity: {
                 site_url: "https://www.perplexity.ai",
-                price_url: "https://docs.perplexity.ai/guides/pricing",
+                price_url: "https://docs.perplexity.ai/getting-started/pricing",
                 api_url: "https://docs.perplexity.ai",
                 models: {
-                  "Sonar Reasoning": { input: 1.00, output: 5.00 },
-                  "Sonar Deep Research": { input: 2.00, output: 8.00 },
-                  "r1-1776 (offline)": { input: 2.00, output: 8.00 },
+                  // Deep Research は検索クエリ課金（$/1K）あり→下部注記
+                  "Sonar":               { input: 1.00, output: 1.00 },
+                  "Sonar Pro":           { input: 3.00, output: 15.00 },
+                  "Sonar Reasoning":     { input: 1.00, output: 5.00 },
+                  "Sonar Reasoning Pro": { input: 2.00, output: 8.00 },
+                  "Sonar Deep Research*":{ input: 2.00, output: 8.00 }, // *検索費用は別
                 },
               },
             },
-            results: {}, // 結果のオブジェクト
+
+            results: {}, // 計算結果
           };
         },
-        methods: {
-          // コスト計算を行う関数
-          calculateCosts() {
-            this.results = {}; // 結果の初期化
 
-            // 各社ごとに計算を実施
+        methods: {
+          // コスト計算（単純合算：段階/キャッシュ/検索クエリ等は未考慮）
+          calculateCosts() {
+            this.results = {};
             for (let company in this.services) {
               const companyData = this.services[company];
               this.results[company] = [];
 
-              // 各モデルごとに計算を実施
               for (let model in companyData.models) {
                 const price = companyData.models[model];
-                // 単価は1Mトークンごとなので、入力値を1Mトークン単位に変換
+
+                // 1回あたりのUSD
                 const costPerRequestUSD =
                   (price.input * this.inputTokens) / 1e6 +
                   (price.output * this.outputTokens) / 1e6;
+
+                // 合計USD/JPY
                 const totalCostUSD = costPerRequestUSD * this.numRequests;
                 const totalCostJPY = totalCostUSD * this.exchangeRate;
 
-                // 計算結果を結果配列に追加
                 this.results[company].push({
                   name: model,
                   inputPrice: price.input,
@@ -238,7 +288,6 @@
         },
       });
 
-      // Vueアプリケーションのマウント
       app.mount("#app");
     </script>
   </body>
