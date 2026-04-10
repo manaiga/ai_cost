@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-01-05 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-04-10 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,7 +15,12 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年1月5日（各社の公式価格ページに基づく）
+        最終更新日: 2026年4月10日（
+        <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
+        <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
+        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
+        <a href="https://api-docs.deepseek.com/quick_start/pricing" class="text-blue-600 hover:underline">DeepSeek</a>
+        ）
       </p>
 
       <a href="https://platform.openai.com/tokenizer" target="_blank"
@@ -59,8 +64,7 @@
           </div>
         </div>
 
-        <!-- 注意：ここでは“単価は標準/通常プロンプト時”。
-             200K超などの段階単価は対応外（下部に注記）。 -->
+        <!-- 注意：単価は各モデルの標準レート（キャッシュ入力等は未考慮）。 -->
         <button type="submit"
                 class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md
                        hover:bg-blue-700 focus:outline-none focus:ring-2
@@ -135,9 +139,8 @@
         <div class="bg-white rounded-lg shadow-sm p-4 space-y-2 text-sm text-gray-600">
           <p>為替レート: 1 USD = {{ exchangeRate }} JPY</p>
           <ul class="list-disc pl-5">
-            <li>Gemini 2.5 / Claude Sonnet 4.x は「入力が200Kトークン超」の場合に<strong>単価が上がる</strong>設定があります（この計算機は標準単価で計算）。</li>
-            <li>OpenAI と DeepSeek は <em>Cached input</em> 単価が別途あります（本計算では未考慮）。</li>
-            <li>Perplexity <em>Deep Research</em> は <strong>検索クエリ</strong>課金（$/1K）が別途発生します（本計算はトークン課金のみ）。</li>
+            <li>単価は各公式の <strong>Standard</strong> 掲載値。Gemini 3.1 Pro 等は公式ページ上「200k トークン以下」の入力・出力単価、GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠（それ以上のプロンプトでは公式どおり単価が変わる場合あり）。</li>
+            <li>OpenAI・Anthropic・DeepSeek は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
           </ul>
         </div>
       </div>
@@ -153,44 +156,34 @@
             numRequests: 1000,
             exchangeRate: 150, // 手動で更新してください
 
-            // ▼各社の公式リンクと“テキスト生成モデルのみ”の価格表
+            // ▼各社公式 Pricing の Standard（$/1M tokens）。出典 URL は各 price_url。
             services: {
               OpenAI: {
                 site_url: "https://openai.com",
                 price_url: "https://platform.openai.com/docs/pricing",
                 api_url: "https://platform.openai.com/docs",
                 models: {
-                  // 公式のAPI価格（$/1M tokens）
-                  // 参考: Pricing | OpenAI Platform
-                  "gpt-5.2": { input: 1.75, output: 14.00 },
-                  "gpt-5.1": { input: 1.25, output: 10.00 },
-                  "gpt-5": { input: 1.25, output: 10.00 },
-                  "gpt-5-mini": { input: 0.25, output: 2.00 },
-                  "gpt-5-nano": { input: 0.05, output: 0.40 },
-                  "gpt-5.2-pro": { input: 21.00, output: 168.00 },
-                  "gpt-5-pro": { input: 15.00, output: 120.00 },
-                  "gpt-4.1": { input: 2.00, output: 8.00 },
-                  "gpt-4.1-mini": { input: 0.40, output: 1.60 },
-                  "gpt-4.1-nano": { input: 0.10, output: 0.40 },
-                  "gpt-4o": { input: 2.50, output: 10.00 },
-                  "gpt-4o-mini": { input: 0.15, output: 0.60 },
-                  "o3": { input: 2.00, output: 8.00 },
-                  "o4-mini": { input: 2.00, output: 8.00 },
+                  // platform.openai.com/docs/pricing — Standard、現行 gpt-5.4 ファミリーのみ
+                  "gpt-5.4 (<272K ctx)": { input: 2.50, output: 15.00 },
+                  "gpt-5.4-mini": { input: 0.75, output: 4.50 },
+                  "gpt-5.4-nano": { input: 0.20, output: 1.25 },
+                  "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00 },
                 },
               },
 
               Claude: {
                 site_url: "https://www.anthropic.com",
-                price_url: "https://console.anthropic.com/docs/en/about-claude/pricing",
+                price_url: "https://docs.anthropic.com/en/docs/about-claude/pricing",
                 api_url: "https://docs.anthropic.com",
                 models: {
-                  // 公式のAPI価格（$/1M tokens）
-                  // 参考: Pricing - Claude Docs
-                  "claude-opus-4-5": { input: 15.00, output: 75.00 },
+                  // docs.anthropic.com — Base input / Output（$/MTok）
+                  "claude-opus-4-6": { input: 5.00, output: 25.00 },
+                  "claude-opus-4-5": { input: 5.00, output: 25.00 },
                   "claude-opus-4-1": { input: 15.00, output: 75.00 },
-                  "claude-opus-4-0": { input: 15.00, output: 75.00 },
+                  "claude-opus-4": { input: 15.00, output: 75.00 },
+                  "claude-sonnet-4-6": { input: 3.00, output: 15.00 },
                   "claude-sonnet-4-5": { input: 3.00, output: 15.00 },
-                  "claude-sonnet-4-0": { input: 3.00, output: 15.00 },
+                  "claude-sonnet-4": { input: 3.00, output: 15.00 },
                   "claude-haiku-4-5": { input: 1.00, output: 5.00 },
                   "claude-haiku-3-5": { input: 0.80, output: 4.00 },
                 },
@@ -201,52 +194,21 @@
                 price_url: "https://ai.google.dev/gemini-api/docs/pricing",
                 api_url: "https://ai.google.dev/gemini-api/docs",
                 models: {
-                  // 公式のAPI価格（$/1M tokens）
-                  // 参考: Gemini Developer API pricing | Gemini API | Google AI for Developers
-                  "gemini-3-pro-preview": { input: 2.00, output: 12.00 },
-                  "gemini-3-flash-preview": { input: 0.50, output: 3.00 },
-                  "gemini-2.5-pro": { input: 1.25, output: 10.00 },
-                  "gemini-2.5-flash": { input: 0.30, output: 2.50 },
-                  "gemini-2.5-flash-lite": { input: 0.10, output: 0.40 },
-                },
-              },
-
-              AWS: {
-                site_url: "https://aws.amazon.com/bedrock/",
-                price_url: "https://aws.amazon.com/blogs/machine-learning/prompting-for-the-best-price-performance/",
-                api_url: "https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html",
-                models: {
-                  // 単価は$/1M換算（AWS公式ブログ/報道に基づく）
-                  "Amazon Nova Micro":   { input: 0.035, output: 0.14 },
-                  "Amazon Nova Lite":    { input: 0.06,  output: 0.24 },
-                  "Amazon Nova Pro":     { input: 0.80,  output: 3.20 },
-                  "Amazon Nova Premier": { input: 2.50,  output: 12.50 },
+                  // ai.google.dev/gemini-api/docs/pricing — Paid / Standard、テキスト・画像・動画入力の単価（高→低）
+                  "gemini-3.1-pro-preview (≤200k prompt)": { input: 2.00, output: 12.00 },
+                  "gemini-3-flash-preview (text/image/video)": { input: 0.50, output: 3.00 },
+                  "gemini-3.1-flash-lite-preview (text/image/video)": { input: 0.25, output: 1.50 },
                 },
               },
 
               DeepSeek: {
                 site_url: "https://www.deepseek.com",
-                price_url: "https://api-docs.deepseek.com/quick_start/pricing-details-usd",
+                price_url: "https://api-docs.deepseek.com/quick_start/pricing",
                 api_url: "https://api-docs.deepseek.com",
                 models: {
-                  // 公式のAPI価格（$/1M tokens、cache miss基準）
-                  // 参考: pricing-details-usd | DeepSeek API Docs
-                  "deepseek-chat (cache miss)": { input: 0.27, output: 1.10 },
-                  "deepseek-reasoner (cache miss)": { input: 0.55, output: 2.19 },
-                },
-              },
-
-              Perplexity: {
-                site_url: "https://www.perplexity.ai",
-                price_url: "https://docs.perplexity.ai/getting-started/pricing",
-                api_url: "https://docs.perplexity.ai",
-                models: {
-                  // Deep Research は検索クエリ課金（$/1K）あり→下部注記
-                  "Sonar":               { input: 1.00, output: 1.00 },
-                  "Sonar Pro":           { input: 3.00, output: 15.00 },
-                  "Sonar Reasoning":     { input: 1.00, output: 5.00 },
-                  "Sonar Reasoning Pro": { input: 2.00, output: 8.00 },
-                  "Sonar Deep Research*":{ input: 2.00, output: 8.00 }, // *検索費用は別
+                  // api-docs.deepseek.com — V3.2、cache miss / 出力（$/1M）
+                  "deepseek-chat (cache miss)": { input: 0.28, output: 0.42 },
+                  "deepseek-reasoner (cache miss)": { input: 0.28, output: 0.42 },
                 },
               },
             },
