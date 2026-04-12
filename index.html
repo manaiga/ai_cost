@@ -18,8 +18,7 @@
         最終更新日: 2026年4月10日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
-        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
-        <a href="https://api-docs.deepseek.com/quick_start/pricing" class="text-blue-600 hover:underline">DeepSeek</a>
+        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a>
         ）
       </p>
 
@@ -140,7 +139,7 @@
           <p>為替レート: 1 USD = {{ exchangeRate }} JPY</p>
           <ul class="list-disc pl-5">
             <li>単価は各公式の <strong>Standard</strong> 掲載値。Gemini 3.1 Pro 等は公式ページ上「200k トークン以下」の入力・出力単価、GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠（それ以上のプロンプトでは公式どおり単価が変わる場合あり）。</li>
-            <li>OpenAI・Anthropic・DeepSeek は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
+            <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
           </ul>
         </div>
       </div>
@@ -176,16 +175,10 @@
                 price_url: "https://docs.anthropic.com/en/docs/about-claude/pricing",
                 api_url: "https://docs.anthropic.com",
                 models: {
-                  // docs.anthropic.com — Base input / Output（$/MTok）
+                  // docs.anthropic.com — 各ライン最新（Opus / Sonnet / Haiku）のみ、$/MTok
                   "claude-opus-4-6": { input: 5.00, output: 25.00 },
-                  "claude-opus-4-5": { input: 5.00, output: 25.00 },
-                  "claude-opus-4-1": { input: 15.00, output: 75.00 },
-                  "claude-opus-4": { input: 15.00, output: 75.00 },
                   "claude-sonnet-4-6": { input: 3.00, output: 15.00 },
-                  "claude-sonnet-4-5": { input: 3.00, output: 15.00 },
-                  "claude-sonnet-4": { input: 3.00, output: 15.00 },
                   "claude-haiku-4-5": { input: 1.00, output: 5.00 },
-                  "claude-haiku-3-5": { input: 0.80, output: 4.00 },
                 },
               },
 
@@ -198,17 +191,6 @@
                   "gemini-3.1-pro-preview (≤200k prompt)": { input: 2.00, output: 12.00 },
                   "gemini-3-flash-preview (text/image/video)": { input: 0.50, output: 3.00 },
                   "gemini-3.1-flash-lite-preview (text/image/video)": { input: 0.25, output: 1.50 },
-                },
-              },
-
-              DeepSeek: {
-                site_url: "https://www.deepseek.com",
-                price_url: "https://api-docs.deepseek.com/quick_start/pricing",
-                api_url: "https://api-docs.deepseek.com",
-                models: {
-                  // api-docs.deepseek.com — V3.2、cache miss / 出力（$/1M）
-                  "deepseek-chat (cache miss)": { input: 0.28, output: 0.42 },
-                  "deepseek-reasoner (cache miss)": { input: 0.28, output: 0.42 },
                 },
               },
             },
