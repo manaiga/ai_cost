@@ -22,15 +22,27 @@
         ）
       </p>
 
-      <a href="https://platform.openai.com/tokenizer" target="_blank"
-        class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6">
-        OpenAIのトークン数計算 <i class="fas fa-external-link-alt ml-1"></i>
-      </a>
+      <details class="mb-6 rounded-lg border border-gray-200 bg-gray-50 group">
+        <summary
+          class="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-gray-900
+                 marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+          <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform group-open:rotate-90"></i>
+          Thinking / 推論トークンについて
+        </summary>
+        <div class="border-t border-gray-200 px-4 py-3 text-sm text-gray-700 leading-relaxed">
+          <p>
+            多くのモデルでは <strong>thinking（内部推論）も出力トークンと同じ $/1M で課金</strong>されます。
+            画面上の短文だけを入れると、実際の請求は桁違いになることがあります。
+            下のフォームでは「表示テキスト」と「thinking」を分けて入れられるようにし、
+            <strong>両方を足したトークン数</strong>に出力単価を掛けて計算します（API の usage と揃えるなら thinking を 0 にして、出力欄に合計だけ入れても構いません）。
+          </p>
+        </div>
+      </details>
 
-      <!-- 入力フォーム：単純なトークン×回数の合算。為替は固定値（ユーザーが変更可） -->
+      <!-- 入力フォーム：入力 +（表示出力 + thinking 出力）× 出力単価。為替は固定値 -->
       <form @submit.prevent="calculateCosts"
             class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <label for="inputTokens"
                    class="block text-sm font-medium text-gray-700 mb-2">
@@ -44,12 +56,24 @@
           <div>
             <label for="outputTokens"
                    class="block text-sm font-medium text-gray-700 mb-2">
-              1回あたりの出力トークン数
+              1回あたりの出力（表示テキスト）
             </label>
             <input type="number" id="outputTokens" v-model.number="outputTokens"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md
                           focus:outline-none focus:ring-2 focus:ring-blue-500
-                          focus:border-transparent" placeholder="例: 1000"/>
+                          focus:border-transparent" placeholder="例: 500"/>
+            <p class="mt-1 text-xs text-gray-500">ユーザーに返す completion のみ</p>
+          </div>
+          <div>
+            <label for="thinkingTokens"
+                   class="block text-sm font-medium text-gray-700 mb-2">
+              1回あたりの thinking / 推論トークン
+            </label>
+            <input type="number" id="thinkingTokens" v-model.number="thinkingTokens"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          focus:border-transparent" placeholder="例: 0"/>
+            <p class="mt-1 text-xs text-gray-500">usage の reasoning / thinking 相当。無ければ 0</p>
           </div>
           <div>
             <label for="numRequests"
@@ -63,7 +87,7 @@
           </div>
         </div>
 
-        <!-- 注意：単価は各モデルの標準レート（キャッシュ入力等は未考慮）。 -->
+        <!-- 単価は各モデルの標準レート（キャッシュ入力等は未考慮） -->
         <button type="submit"
                 class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md
                        hover:bg-blue-700 focus:outline-none focus:ring-2
@@ -79,22 +103,28 @@
         <div v-for="(models, company) in results" :key="company"
              class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <div class="flex flex-wrap items-center gap-4">
-              <h3 class="text-xl font-semibold text-gray-900">
-                <a :href="services[company].site_url" target="_blank"
-                   class="hover:text-blue-600 transition-colors">
-                  {{ company }} <i class="fas fa-external-link-alt text-sm"></i>
-                </a>
-              </h3>
-              <a :href="services[company].price_url" target="_blank"
-                 class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
-                Pricing <i class="fas fa-external-link-alt"></i>
+            <nav class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+                 :aria-label="company + ' 公式リンク'">
+              <a :href="services[company].site_url" target="_blank" rel="noopener noreferrer"
+                 class="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                {{ company }}
               </a>
-              <a :href="services[company].api_url" target="_blank"
-                 class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
-                API <i class="fas fa-external-link-alt"></i>
+              <span class="text-gray-300 select-none" aria-hidden="true">·</span>
+              <a :href="services[company].price_url" target="_blank" rel="noopener noreferrer"
+                 class="text-gray-600 hover:text-blue-600 hover:underline underline-offset-2 decoration-gray-300">
+                Pricing
               </a>
-            </div>
+              <span class="text-gray-300 select-none" aria-hidden="true">·</span>
+              <a :href="services[company].api_url" target="_blank" rel="noopener noreferrer"
+                 class="text-gray-600 hover:text-blue-600 hover:underline underline-offset-2 decoration-gray-300">
+                API
+              </a>
+              <span class="text-gray-300 select-none" aria-hidden="true">·</span>
+              <a :href="services[company].tokens_url" target="_blank" rel="noopener noreferrer"
+                 class="text-gray-600 hover:text-blue-600 hover:underline underline-offset-2 decoration-gray-300">
+                トークン数
+              </a>
+            </nav>
           </div>
 
           <div class="overflow-x-auto">
@@ -135,12 +165,31 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm p-4 space-y-2 text-sm text-gray-600">
+        <div class="bg-white rounded-lg shadow-sm p-4 space-y-3 text-sm text-gray-600">
           <p>為替レート: 1 USD = {{ exchangeRate }} JPY</p>
-          <ul class="list-disc pl-5">
-            <li>単価は各公式の <strong>Standard</strong> 掲載値。Gemini 3.1 Pro 等は公式ページ上「200k トークン以下」の入力・出力単価、GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠（それ以上のプロンプトでは公式どおり単価が変わる場合あり）。</li>
-            <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
-          </ul>
+          <p>
+            出力課金トークン（1回あたり）:
+            表示 <strong>{{ Number(outputTokens) || 0 }}</strong>
+            ＋ thinking <strong>{{ Number(thinkingTokens) || 0 }}</strong>
+            ＝ <strong>{{ (Number(outputTokens) || 0) + (Number(thinkingTokens) || 0) }}</strong>
+            （この合計 × 表の出力単価）
+          </p>
+          <details class="rounded-md border border-gray-200 bg-gray-50 text-gray-700 group">
+            <summary
+              class="cursor-pointer select-none list-none px-3 py-2 text-sm font-medium text-gray-900
+                     marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+              <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform group-open:rotate-90"></i>
+              前提条件・免責（単価・thinking・その他）
+            </summary>
+            <div class="border-t border-gray-200 px-3 py-3 text-sm leading-relaxed">
+              <ul class="list-disc pl-5 space-y-2">
+                <li><strong>Thinking</strong>: Gemini 公式の「Output (including thinking tokens)」などと同様、<strong>本計算でも thinking トークンは出力と同じ $/1M</strong>で積み上げます。内部推論が大きいほど実費は伸びます。</li>
+                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。</li>
+                <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
+                <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
+              </ul>
+            </div>
+          </details>
         </div>
       </div>
     </div>
@@ -152,6 +201,7 @@
             // ▼デフォルト値（任意に変更可能）
             inputTokens: 1000,
             outputTokens: 1000,
+            thinkingTokens: 0,
             numRequests: 1000,
             exchangeRate: 150, // 手動で更新してください
 
@@ -161,6 +211,7 @@
                 site_url: "https://openai.com",
                 price_url: "https://platform.openai.com/docs/pricing",
                 api_url: "https://platform.openai.com/docs",
+                tokens_url: "https://platform.openai.com/tokenizer",
                 models: {
                   // platform.openai.com/docs/pricing — Standard、現行 gpt-5.4 ファミリーのみ
                   "gpt-5.4 (<272K ctx)": { input: 2.50, output: 15.00 },
@@ -174,6 +225,7 @@
                 site_url: "https://www.anthropic.com",
                 price_url: "https://docs.anthropic.com/en/docs/about-claude/pricing",
                 api_url: "https://docs.anthropic.com",
+                tokens_url: "https://docs.anthropic.com/en/docs/build-with-claude/token-counting",
                 models: {
                   // docs.anthropic.com — 各ライン最新（Opus / Sonnet / Haiku）のみ、$/MTok
                   "claude-opus-4-6": { input: 5.00, output: 25.00 },
@@ -186,6 +238,7 @@
                 site_url: "https://ai.google.dev",
                 price_url: "https://ai.google.dev/gemini-api/docs/pricing",
                 api_url: "https://ai.google.dev/gemini-api/docs",
+                tokens_url: "https://ai.google.dev/gemini-api/docs/tokens",
                 models: {
                   // ai.google.dev/gemini-api/docs/pricing — Paid / Standard、テキスト・画像・動画入力の単価（高→低）
                   "gemini-3.1-pro-preview (≤200k prompt)": { input: 2.00, output: 12.00 },
@@ -210,10 +263,14 @@
               for (let model in companyData.models) {
                 const price = companyData.models[model];
 
-                // 1回あたりのUSD
+                const outBillable =
+                  (Number(this.outputTokens) || 0) +
+                  (Number(this.thinkingTokens) || 0);
+
+                // 1回あたりのUSD（thinking は出力と同じ単価で課金される前提）
                 const costPerRequestUSD =
-                  (price.input * this.inputTokens) / 1e6 +
-                  (price.output * this.outputTokens) / 1e6;
+                  (price.input * (Number(this.inputTokens) || 0)) / 1e6 +
+                  (price.output * outBillable) / 1e6;
 
                 // 合計USD/JPY
                 const totalCostUSD = costPerRequestUSD * this.numRequests;
