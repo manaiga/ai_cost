@@ -18,7 +18,8 @@
         最終更新日: 2026年4月10日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
-        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a>
+        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
+        <a href="https://api-docs.deepseek.com/quick_start/pricing" class="text-blue-600 hover:underline">DeepSeek</a>
         ）
       </p>
 
@@ -244,6 +245,18 @@
                   "gemini-3.1-pro-preview (≤200k prompt)": { input: 2.00, output: 12.00 },
                   "gemini-3-flash-preview (text/image/video)": { input: 0.50, output: 3.00 },
                   "gemini-3.1-flash-lite-preview (text/image/video)": { input: 0.25, output: 1.50 },
+                },
+              },
+
+              DeepSeek: {
+                site_url: "https://www.deepseek.com",
+                price_url: "https://api-docs.deepseek.com/quick_start/pricing",
+                api_url: "https://api-docs.deepseek.com",
+                tokens_url: "https://api-docs.deepseek.com/quick_start/pricing",
+                models: {
+                  // api-docs.deepseek.com/quick_start/pricing — Standard list price ($/1M tokens)
+                  "deepseek-v4-pro": { input: 1.74, output: 3.48 },
+                  "deepseek-v4 (flash)": { input: 0.14, output: 0.28 },
                 },
               },
             },
