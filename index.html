@@ -98,68 +98,56 @@
         </button>
       </form>
 
-      <!-- 計算結果テーブル -->
-      <div v-if="Object.keys(results).length" class="space-y-8">
+      <!-- 計算結果テーブル（全社統合・ソート可） -->
+      <div v-if="sortedModels.length" class="space-y-6">
         <h2 class="text-2xl font-bold text-gray-900">計算結果</h2>
 
-        <div v-for="(models, company) in results" :key="company"
-             class="bg-white rounded-lg shadow-md overflow-hidden">
-          <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <nav class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
-                 :aria-label="company + ' 公式リンク'">
-              <a :href="services[company].site_url" target="_blank" rel="noopener noreferrer"
-                 class="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-                {{ company }}
-              </a>
-              <span class="text-gray-300 select-none" aria-hidden="true">·</span>
-              <a :href="services[company].price_url" target="_blank" rel="noopener noreferrer"
-                 class="text-gray-600 hover:text-blue-600 hover:underline underline-offset-2 decoration-gray-300">
-                Pricing
-              </a>
-              <span class="text-gray-300 select-none" aria-hidden="true">·</span>
-              <a :href="services[company].api_url" target="_blank" rel="noopener noreferrer"
-                 class="text-gray-600 hover:text-blue-600 hover:underline underline-offset-2 decoration-gray-300">
-                API
-              </a>
-              <span class="text-gray-300 select-none" aria-hidden="true">·</span>
-              <a :href="services[company].tokens_url" target="_blank" rel="noopener noreferrer"
-                 class="text-gray-600 hover:text-blue-600 hover:underline underline-offset-2 decoration-gray-300">
-                トークン数
-              </a>
-            </nav>
-          </div>
-
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">モデル</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入力単価 ($/1M)</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">出力単価 ($/1M)</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合計費用 ($)</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合計費用 (円)</th>
+                  <th @click="sortBy('company')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
+                  </th>
+                  <th @click="sortBy('name')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    モデル <span class="text-gray-400 ml-0.5">{{ sortIcon('name') }}</span>
+                  </th>
+                  <th @click="sortBy('inputPrice')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    入力単価 ($/1M) <span class="text-gray-400 ml-0.5">{{ sortIcon('inputPrice') }}</span>
+                  </th>
+                  <th @click="sortBy('outputPrice')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    出力単価 ($/1M) <span class="text-gray-400 ml-0.5">{{ sortIcon('outputPrice') }}</span>
+                  </th>
+                  <th @click="sortBy('costUSD')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    合計費用 <span class="text-gray-400 ml-0.5">{{ sortIcon('costUSD') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="model in models" :key="model.name" class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr v-for="model in sortedModels" :key="model.company + '/' + model.name"
+                    class="hover:bg-gray-50">
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
+                       class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-medium text-gray-900">
                     {{ model.name }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ model.inputPrice % 1 === 0 ? model.inputPrice :
-                        model.inputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(model.inputPrice) }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ model.outputPrice % 1 === 0 ? model.outputPrice :
-                        model.outputPrice.toFixed(3).replace(/\.?0+$/, '') }}
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(model.outputPrice) }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ model.costUSD % 1 === 0 ? model.costUSD :
-                        model.costUSD.toFixed(3).replace(/\.?0+$/, '') }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ¥{{ model.costJPY % 1 === 0 ? model.costJPY :
-                        model.costJPY.toFixed(3).replace(/\.?0+$/, '') }}
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(model.costUSD) }}
+                    <span class="text-gray-500">(¥{{ fmt(model.costJPY) }})</span>
                   </td>
                 </tr>
               </tbody>
@@ -206,6 +194,9 @@
             thinkingTokens: 0,
             numRequests: 1000,
             exchangeRate: 150, // 手動で更新してください
+
+            sortColumn: 'costUSD',
+            sortDirection: 'asc',
 
             // ▼各社公式 Pricing の Standard（$/1M tokens）。出典 URL は各 price_url。
             services: {
@@ -284,11 +275,49 @@
               },
             },
 
-            results: {}, // 計算結果
+            results: {},
           };
         },
 
+        computed: {
+          sortedModels() {
+            const flat = [];
+            for (const company in this.results) {
+              for (const model of this.results[company]) {
+                flat.push({ ...model, company });
+              }
+            }
+            const dir = this.sortDirection === 'asc' ? 1 : -1;
+            return flat.sort((a, b) => {
+              const av = a[this.sortColumn];
+              const bv = b[this.sortColumn];
+              if (typeof av === 'string') return dir * av.localeCompare(bv, 'ja');
+              return dir * (av - bv);
+            });
+          },
+        },
+
         methods: {
+          sortBy(col) {
+            if (this.sortColumn === col) {
+              this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              this.sortColumn = col;
+              this.sortDirection = 'asc';
+            }
+          },
+
+          sortIcon(col) {
+            if (this.sortColumn !== col) return '↕';
+            return this.sortDirection === 'asc' ? '▲' : '▼';
+          },
+
+          fmt(n) {
+            if (n === 0) return '0';
+            if (n % 1 === 0) return n.toLocaleString();
+            return n.toFixed(3).replace(/\.?0+$/, '');
+          },
+
           // コスト計算（単純合算：段階/キャッシュ/検索クエリ等は未考慮）
           calculateCosts() {
             this.results = {};
