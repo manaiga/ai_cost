@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-05-27 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-06-13 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,11 +15,12 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年5月27日（
+        最終更新日: 2026年6月13日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
-        <a href="https://api-docs.deepseek.com/quick_start/pricing" class="text-blue-600 hover:underline">DeepSeek</a>
+        <a href="https://api-docs.deepseek.com/quick_start/pricing" class="text-blue-600 hover:underline">DeepSeek</a> /
+        <a href="https://aws.amazon.com/bedrock/pricing/" class="text-blue-600 hover:underline">AWS Bedrock</a>
         ）
       </p>
 
@@ -185,7 +186,7 @@
             <div class="border-t border-gray-200 px-3 py-3 text-sm leading-relaxed">
               <ul class="list-disc pl-5 space-y-2">
                 <li><strong>Thinking</strong>: Gemini 公式の「Output (including thinking tokens)」などと同様、<strong>本計算でも thinking トークンは出力と同じ $/1M</strong>で積み上げます。内部推論が大きいほど実費は伸びます。</li>
-                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。DeepSeek V4-Pro は 2026/05/31 より正式単価が 1/4 に改定（プロモーション価格が恒久化）。</li>
+                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。DeepSeek V4-Pro は 2026/05/31 より正式単価が 1/4 に改定（プロモーション価格が恒久化）。AWS Nova は Amazon Bedrock On-Demand 料金（Nova Micro が主要モデル中最安クラスの $0.035/$0.14）。</li>
                 <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
                 <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
               </ul>
@@ -214,13 +215,14 @@
                 api_url: "https://platform.openai.com/docs",
                 tokens_url: "https://platform.openai.com/tokenizer",
                 models: {
-                  // platform.openai.com/docs/pricing — Standard、gpt-5.5 / gpt-5.4 ファミリー
+                  // platform.openai.com/docs/pricing — Standard、gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
                   "gpt-5.5 (<272K ctx)": { input: 5.00, output: 30.00 },
                   "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00 },
                   "gpt-5.4 (<272K ctx)": { input: 2.50, output: 15.00 },
                   "gpt-5.4-mini": { input: 0.75, output: 4.50 },
                   "gpt-5.4-nano": { input: 0.20, output: 1.25 },
                   "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00 },
+                  "gpt-5-nano": { input: 0.050, output: 0.40 },
                 },
               },
 
@@ -230,8 +232,9 @@
                 api_url: "https://docs.anthropic.com",
                 tokens_url: "https://docs.anthropic.com/en/docs/build-with-claude/token-counting",
                 models: {
-                  // docs.anthropic.com — 各ライン最新（Opus / Sonnet / Haiku）のみ、$/MTok
-                  "claude-opus-4-6": { input: 5.00, output: 25.00 },
+                  // docs.anthropic.com — 各ライン最新（Fable / Opus / Sonnet / Haiku）のみ、$/MTok
+                  "claude-fable-5": { input: 10.00, output: 50.00 },
+                  "claude-opus-4-8": { input: 5.00, output: 25.00 },
                   "claude-sonnet-4-6": { input: 3.00, output: 15.00 },
                   "claude-haiku-4-5": { input: 1.00, output: 5.00 },
                 },
@@ -263,6 +266,20 @@
                   // api-docs.deepseek.com/quick_start/pricing — 2026/05/31以降の正式価格（75%割引を永続化）
                   "deepseek-v4-pro": { input: 0.435, output: 0.87 },
                   "deepseek-v4 (flash)": { input: 0.14, output: 0.28 },
+                },
+              },
+
+              "AWS Bedrock": {
+                site_url: "https://aws.amazon.com/bedrock/",
+                price_url: "https://aws.amazon.com/bedrock/pricing/",
+                api_url: "https://docs.aws.amazon.com/bedrock/latest/APIReference/",
+                tokens_url: "https://aws.amazon.com/bedrock/pricing/",
+                models: {
+                  // aws.amazon.com/bedrock/pricing — Amazon Nova ファミリー、On-Demand 標準料金
+                  "Nova Micro": { input: 0.035, output: 0.14 },
+                  "Nova Lite": { input: 0.060, output: 0.24 },
+                  "Nova Pro": { input: 0.80, output: 3.20 },
+                  "Nova Premier": { input: 2.50, output: 12.50 },
                 },
               },
             },
