@@ -168,6 +168,10 @@
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     モデル <span class="text-gray-400 ml-0.5">{{ sortIcon('name') }}</span>
                   </th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      title="Extended thinking / 推論モード対応">
+                    <i class="fas fa-brain mr-1"></i>Thinking
+                  </th>
                   <th @click="sortBy('inputPrice')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     入力単価 ($/1M) <span class="text-gray-400 ml-0.5">{{ sortIcon('inputPrice') }}</span>
@@ -188,7 +192,7 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
-                  <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
                     表示するプロバイダーを選択してください
                   </td>
                 </tr>
@@ -208,6 +212,10 @@
                           class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700">
                       おすすめ
                     </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                    <i v-if="model.thinking" class="fas fa-brain text-purple-500" title="Extended thinking対応"></i>
+                    <span v-else class="text-gray-300 text-xs">—</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                     ${{ fmt(model.inputPrice) }}
@@ -338,19 +346,19 @@
                 tokens_url: "https://platform.openai.com/tokenizer",
                 models: {
                   // platform.openai.com/docs/pricing — gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
-                  "gpt-5.5 (<272K ctx)": { input: 5.00, output: 30.00 },
-                  "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00 },
-                  "gpt-5.4 (<272K ctx)": { input: 2.50, output: 15.00 },
-                  "gpt-5.4-mini": { input: 0.75, output: 4.50 },
-                  "gpt-5.4-nano": { input: 0.20, output: 1.25 },
-                  "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00 },
-                  "gpt-5-mini": { input: 0.125, output: 1.00 },
-                  "gpt-5-nano": { input: 0.050, output: 0.40 },
+                  "gpt-5.5 (<272K ctx)":     { input: 5.00,  output: 30.00,  thinking: true  },
+                  "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
+                  "gpt-5.4 (<272K ctx)":     { input: 2.50,  output: 15.00,  thinking: true  },
+                  "gpt-5.4-mini":            { input: 0.75,  output: 4.50,   thinking: false },
+                  "gpt-5.4-nano":            { input: 0.20,  output: 1.25,   thinking: false },
+                  "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
+                  "gpt-5-mini":              { input: 0.125, output: 1.00,   thinking: false },
+                  "gpt-5-nano":              { input: 0.050, output: 0.40,   thinking: false },
                   // gpt-4.1 / gpt-4o ファミリー（現役）
-                  "gpt-4.1": { input: 2.00, output: 8.00 },
-                  "gpt-4.1-mini": { input: 0.40, output: 1.60 },
-                  "gpt-4o": { input: 2.50, output: 10.00 },
-                  "gpt-4o-mini": { input: 0.15, output: 0.60 },
+                  "gpt-4.1":     { input: 2.00, output: 8.00,  thinking: false },
+                  "gpt-4.1-mini":{ input: 0.40, output: 1.60,  thinking: false },
+                  "gpt-4o":      { input: 2.50, output: 10.00, thinking: false },
+                  "gpt-4o-mini": { input: 0.15, output: 0.60,  thinking: false },
                 },
               },
 
@@ -361,10 +369,10 @@
                 tokens_url: "https://docs.anthropic.com/en/docs/build-with-claude/token-counting",
                 models: {
                   // docs.anthropic.com — 各ライン最新（Fable / Opus / Sonnet / Haiku）のみ、$/MTok
-                  "claude-fable-5": { input: 10.00, output: 50.00 },
-                  "claude-opus-4-8": { input: 5.00, output: 25.00 },
-                  "claude-sonnet-4-6": { input: 3.00, output: 15.00 },
-                  "claude-haiku-4-5": { input: 1.00, output: 5.00 },
+                  "claude-fable-5":    { input: 10.00, output: 50.00, thinking: true },
+                  "claude-opus-4-8":   { input: 5.00,  output: 25.00, thinking: true },
+                  "claude-sonnet-4-6": { input: 3.00,  output: 15.00, thinking: true },
+                  "claude-haiku-4-5":  { input: 1.00,  output: 5.00,  thinking: true },
                 },
               },
 
@@ -375,13 +383,13 @@
                 tokens_url: "https://ai.google.dev/gemini-api/docs/tokens",
                 models: {
                   // ai.google.dev/gemini-api/docs/pricing — Paid / Standard
-                  "gemini-3.5-flash": { input: 1.50, output: 9.00 },
-                  "gemini-3.1-pro-preview (≤200k prompt)": { input: 2.00, output: 12.00 },
-                  "gemini-3-flash-preview (text/image/video)": { input: 0.50, output: 3.00 },
-                  "gemini-3.1-flash-lite (text/image/video)": { input: 0.25, output: 1.50 },
-                  "gemini-2.5-pro (≤200k prompt)": { input: 1.25, output: 10.00 },
-                  "gemini-2.5-flash (text/image/video)": { input: 0.30, output: 2.50 },
-                  "gemini-2.5-flash-lite (text/image/video)": { input: 0.10, output: 0.40 },
+                  "gemini-3.5-flash":                          { input: 1.50, output: 9.00,  thinking: true  },
+                  "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true  },
+                  "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true  },
+                  "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: false },
+                  "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true  },
+                  "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true  },
+                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: false },
                 },
               },
 
@@ -392,8 +400,8 @@
                 tokens_url: "https://api-docs.deepseek.com/quick_start/pricing",
                 models: {
                   // api-docs.deepseek.com/quick_start/pricing — 2026/05/31以降の正式価格
-                  "deepseek-v4-pro": { input: 0.435, output: 0.87 },
-                  "deepseek-v4 (flash)": { input: 0.14, output: 0.28 },
+                  "deepseek-v4-pro":   { input: 0.435, output: 0.87, thinking: true },
+                  "deepseek-v4 (flash)":{ input: 0.14,  output: 0.28, thinking: true },
                 },
               },
 
@@ -404,10 +412,10 @@
                 tokens_url: "https://aws.amazon.com/bedrock/pricing/",
                 models: {
                   // aws.amazon.com/bedrock/pricing — Amazon Nova ファミリー、On-Demand 標準料金
-                  "Nova Micro": { input: 0.035, output: 0.14 },
-                  "Nova Lite": { input: 0.060, output: 0.24 },
-                  "Nova Pro": { input: 0.80, output: 3.20 },
-                  "Nova Premier": { input: 2.50, output: 12.50 },
+                  "Nova Micro":   { input: 0.035, output: 0.14,  thinking: false },
+                  "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false },
+                  "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: true  },
+                  "Nova Premier": { input: 2.50,  output: 12.50, thinking: true  },
                 },
               },
             },
@@ -517,6 +525,7 @@
                   name: model,
                   inputPrice: price.input,
                   outputPrice: price.output,
+                  thinking: price.thinking || false,
                   costUSD: totalCostUSD,
                   costJPY: totalCostJPY,
                 });
