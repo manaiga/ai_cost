@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-06-22 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-07-13 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,7 +15,7 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年6月22日（
+        最終更新日: 2026年7月13日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
@@ -345,7 +345,10 @@
                 api_url: "https://platform.openai.com/docs",
                 tokens_url: "https://platform.openai.com/tokenizer",
                 models: {
-                  // platform.openai.com/docs/pricing — gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
+                  // platform.openai.com/docs/pricing — gpt-5.6 (Sol/Terra/Luna) / gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
+                  "gpt-5.6-sol":             { input: 5.00,  output: 30.00,  thinking: true  },
+                  "gpt-5.6-terra":           { input: 2.50,  output: 15.00,  thinking: true  },
+                  "gpt-5.6-luna":            { input: 1.00,  output: 6.00,   thinking: true  },
                   "gpt-5.5 (<272K ctx)":     { input: 5.00,  output: 30.00,  thinking: true  },
                   "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
                   "gpt-5.4 (<272K ctx)":     { input: 2.50,  output: 15.00,  thinking: true  },
@@ -369,10 +372,10 @@
                 tokens_url: "https://docs.anthropic.com/en/docs/build-with-claude/token-counting",
                 models: {
                   // docs.anthropic.com — 各ライン最新（Fable / Opus / Sonnet / Haiku）のみ、$/MTok
-                  "claude-fable-5":    { input: 10.00, output: 50.00, thinking: true },
-                  "claude-opus-4-8":   { input: 5.00,  output: 25.00, thinking: true },
-                  "claude-sonnet-4-6": { input: 3.00,  output: 15.00, thinking: true },
-                  "claude-haiku-4-5":  { input: 1.00,  output: 5.00,  thinking: true },
+                  "claude-fable-5":                  { input: 10.00, output: 50.00, thinking: true },
+                  "claude-opus-4-8":                 { input: 5.00,  output: 25.00, thinking: true },
+                  "claude-sonnet-5 (〜8/31 導入価格)": { input: 2.00,  output: 10.00, thinking: true },
+                  "claude-haiku-4-5":                { input: 1.00,  output: 5.00,  thinking: true },
                 },
               },
 
