@@ -415,10 +415,14 @@
                 tokens_url: "https://aws.amazon.com/bedrock/pricing/",
                 models: {
                   // aws.amazon.com/bedrock/pricing — Amazon Nova ファミリー、On-Demand 標準料金
+                  // Nova 2 世代（2025-12）: extended thinking 対応
+                  "Nova 2 Pro (preview)": { input: 2.19,  output: 17.50, thinking: true  },
+                  "Nova 2 Lite":          { input: 0.30,  output: 2.50,  thinking: true  },
+                  // Nova v1 世代: reasoning 非対応
                   "Nova Micro":   { input: 0.035, output: 0.14,  thinking: false },
                   "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false },
-                  "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: true  },
-                  "Nova Premier": { input: 2.50,  output: 12.50, thinking: true  },
+                  "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: false },
+                  "Nova Premier": { input: 2.50,  output: 12.50, thinking: false },
                 },
               },
             },
