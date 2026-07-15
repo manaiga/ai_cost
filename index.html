@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-07-13 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-07-15 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,7 +15,7 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年7月13日（
+        最終更新日: 2026年7月15日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
@@ -260,7 +260,7 @@
             <div class="border-t border-gray-200 px-3 py-3 text-sm leading-relaxed">
               <ul class="list-disc pl-5 space-y-2">
                 <li><strong>Thinking</strong>: Gemini 公式の「Output (including thinking tokens)」などと同様、<strong>本計算でも thinking トークンは出力と同じ $/1M</strong>で積み上げます。内部推論が大きいほど実費は伸びます。</li>
-                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。DeepSeek V4-Pro は 2026/05/31 より正式単価が 1/4 に改定（プロモーション価格が恒久化）。AWS Nova は Amazon Bedrock On-Demand 料金（Nova Micro が主要モデル中最安クラスの $0.035/$0.14）。</li>
+                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。DeepSeek V4-Pro は 2026/05/31 より正式単価が 1/4 に改定（プロモーション価格が恒久化）。AWS Nova は Amazon Bedrock On-Demand 料金（Nova Micro が主要モデル中最安クラスの $0.035/$0.14）。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
                 <li><strong>おすすめ表示</strong>: ユースケース別のおすすめはコスト・性能・用途の傾向に基づく目安です。実際の精度はタスク内容に依存します。</li>
                 <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
                 <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
@@ -414,7 +414,7 @@
                 api_url: "https://docs.aws.amazon.com/bedrock/latest/APIReference/",
                 tokens_url: "https://aws.amazon.com/bedrock/pricing/",
                 models: {
-                  // aws.amazon.com/bedrock/pricing — Amazon Nova ファミリー、On-Demand 標準料金
+                  // aws.amazon.com/bedrock/pricing — Amazon Nova ファミリー + Google Gemma 4、On-Demand 標準料金
                   // Nova 2 世代（2025-12）: extended thinking 対応
                   "Nova 2 Pro (preview)": { input: 2.19,  output: 17.50, thinking: true  },
                   "Nova 2 Lite":          { input: 0.30,  output: 2.50,  thinking: true  },
@@ -423,6 +423,9 @@
                   "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false },
                   "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: false },
                   "Nova Premier": { input: 2.50,  output: 12.50, thinking: false },
+                  // Google Gemma 4（Bedrock ホスト、2026-06〜）: reasoning 内蔵。中身は Google 製
+                  "Gemma 4 31B (Google)":     { input: 0.14, output: 0.40, thinking: true },
+                  "Gemma 4 26B-A4B (Google)": { input: 0.06, output: 0.33, thinking: true }, // Bedrock価格は参考値（OpenRouter基準）
                 },
               },
             },
