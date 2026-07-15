@@ -41,6 +41,29 @@
         </div>
       </details>
 
+      <details class="mb-6 rounded-lg border border-gray-200 bg-gray-50 group">
+        <summary
+          class="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-gray-900
+                 marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+          <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform group-open:rotate-90"></i>
+          判断タスク（短い出力）の速度・レイテンシの見方
+        </summary>
+        <div class="border-t border-gray-200 px-4 py-3 text-sm text-gray-700 leading-relaxed space-y-2">
+          <p>
+            「この内容がルールに適しているか」など<strong>出力が短い判断タスク</strong>（〜100文字程度）では、
+            <strong>1秒あたりの出力トークン数（スループット）はほぼ無意味</strong>です。
+            出力生成そのものは誤差（約40トークン ÷ 200 tok/s ≒ 0.2秒）で、効くのは「答えが返るまでの総レイテンシ」。
+            そしてそれは <strong>思考（thinking）するかどうかでほぼ決まります</strong>。
+          </p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>目安</strong>: 非推論／思考オフ = 0.2〜1秒。<strong>思考オン = その5〜30倍</strong>（数秒〜数十秒。end-to-end で 10〜150秒に達することも）。</li>
+            <li>だから上の表の <i class="fas fa-brain text-purple-500"></i> 列は、<strong>速度リスクの指標</strong>としても読めます。判断タスクなら「非推論モデルを選ぶ」か「推論モデルでも <code class="text-xs bg-gray-100 px-1 rounded">reasoning_effort</code> を minimal / none に落とす」と速い。</li>
+            <li><strong>注意</strong>: 一部（Gemini 3.x / 2.5 Pro 等）は<strong>デフォルトで思考オン</strong>のため、明示的に下げないと遅くなります。</li>
+            <li><strong>キャッシュ</strong>: 固定の指示・判定ルールを prompt の先頭（prefix）に置くと、<strong>入力が最大90%オフ＆レイテンシも最大85%減</strong>（Bedrock の Gemma 4 / Nova、OpenAI・Claude・Gemini・DeepSeek 等でほぼ共通）。「固定 prefix ＋ 小さい可変入力 ＋ 短い出力」の判断タスクに最も効きます。</li>
+          </ul>
+        </div>
+      </details>
+
       <!-- 入力フォーム -->
       <form @submit.prevent="calculateCosts"
             class="bg-white rounded-lg shadow-md p-6 mb-8">
