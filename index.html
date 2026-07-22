@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-07-15 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-07-22 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,7 +15,7 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年7月15日（
+        最終更新日: 2026年7月22日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
@@ -409,7 +409,10 @@
                 tokens_url: "https://ai.google.dev/gemini-api/docs/tokens",
                 models: {
                   // ai.google.dev/gemini-api/docs/pricing — Paid / Standard
+                  // 2026-07-21 リリース: 3.6 Flash / 3.5 Flash-Lite（Cyber は政府・信頼パートナー限定のため未収録）
+                  "gemini-3.6-flash":                          { input: 1.50, output: 7.50,  thinking: true  },
                   "gemini-3.5-flash":                          { input: 1.50, output: 9.00,  thinking: true  },
+                  "gemini-3.5-flash-lite (text/image/video)":   { input: 0.30, output: 2.50,  thinking: false },
                   "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true  },
                   "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true  },
                   "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: false },
