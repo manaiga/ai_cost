@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-07-22 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-07-24 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,7 +15,7 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年7月22日（
+        最終更新日: 2026年7月24日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
@@ -57,8 +57,8 @@
           </p>
           <ul class="list-disc pl-5 space-y-1">
             <li><strong>目安</strong>: 非推論／思考オフ = 0.2〜1秒。<strong>思考オン = その5〜30倍</strong>（数秒〜数十秒。end-to-end で 10〜150秒に達することも）。</li>
-            <li>だから上の表の <i class="fas fa-brain text-purple-500"></i> 列は、<strong>速度リスクの指標</strong>としても読めます。判断タスクなら「非推論モデルを選ぶ」か「推論モデルでも <code class="text-xs bg-gray-100 px-1 rounded">reasoning_effort</code> を minimal / none に落とす」と速い。</li>
-            <li><strong>注意</strong>: 一部（Gemini 3.x / 2.5 Pro 等）は<strong>デフォルトで思考オン</strong>のため、明示的に下げないと遅くなります。</li>
+            <li>上の表の <i class="fas fa-brain text-purple-500"></i> 列は「<strong>思考モードに対応</strong>」の意味（厳密な対応可否）。対応していても<strong>既定の思考量はモデル次第</strong>で、flash-lite / mini / nano は既定が軽く判断タスクでは速い一方、<strong>Gemini 3.x や 2.5 Pro 等は既定で思考オン</strong>なので要注意。</li>
+            <li>判断タスクでは <code class="text-xs bg-gray-100 px-1 rounded">reasoning_effort</code> / <code class="text-xs bg-gray-100 px-1 rounded">thinking_level</code> を minimal / none に落とせば、<i class="fas fa-brain text-purple-500"></i> 付きモデルでも速く返ります。</li>
             <li><strong>キャッシュ</strong>: 固定の指示・判定ルールを prompt の先頭（prefix）に置くと、<strong>入力が最大90%オフ＆レイテンシも最大85%減</strong>（Bedrock の Gemma 4 / Nova、OpenAI・Claude・Gemini・DeepSeek 等でほぼ共通）。「固定 prefix ＋ 小さい可変入力 ＋ 短い出力」の判断タスクに最も効きます。</li>
           </ul>
         </div>
@@ -375,12 +375,12 @@
                   "gpt-5.5 (<272K ctx)":     { input: 5.00,  output: 30.00,  thinking: true  },
                   "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
                   "gpt-5.4 (<272K ctx)":     { input: 2.50,  output: 15.00,  thinking: true  },
-                  "gpt-5.4-mini":            { input: 0.75,  output: 4.50,   thinking: false },
-                  "gpt-5.4-nano":            { input: 0.20,  output: 1.25,   thinking: false },
+                  "gpt-5.4-mini":            { input: 0.75,  output: 4.50,   thinking: true  },
+                  "gpt-5.4-nano":            { input: 0.20,  output: 1.25,   thinking: true  },
                   "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
-                  "gpt-5-mini":              { input: 0.125, output: 1.00,   thinking: false },
-                  "gpt-5-nano":              { input: 0.050, output: 0.40,   thinking: false },
-                  // gpt-4.1 / gpt-4o ファミリー（現役）
+                  "gpt-5-mini":              { input: 0.125, output: 1.00,   thinking: true  },
+                  "gpt-5-nano":              { input: 0.050, output: 0.40,   thinking: true  },
+                  // gpt-4.1 / gpt-4o ファミリー（現役・非推論 = reasoning 非対応）
                   "gpt-4.1":     { input: 2.00, output: 8.00,  thinking: false },
                   "gpt-4.1-mini":{ input: 0.40, output: 1.60,  thinking: false },
                   "gpt-4o":      { input: 2.50, output: 10.00, thinking: false },
@@ -396,7 +396,7 @@
                 models: {
                   // docs.anthropic.com — 各ライン最新（Fable / Opus / Sonnet / Haiku）のみ、$/MTok
                   "claude-fable-5":                  { input: 10.00, output: 50.00, thinking: true },
-                  "claude-opus-4-8":                 { input: 5.00,  output: 25.00, thinking: true },
+                  "claude-opus-5":                   { input: 5.00,  output: 25.00, thinking: true },
                   "claude-sonnet-5 (〜8/31 導入価格)": { input: 2.00,  output: 10.00, thinking: true },
                   "claude-haiku-4-5":                { input: 1.00,  output: 5.00,  thinking: true },
                 },
@@ -412,13 +412,13 @@
                   // 2026-07-21 リリース: 3.6 Flash / 3.5 Flash-Lite（Cyber は政府・信頼パートナー限定のため未収録）
                   "gemini-3.6-flash":                          { input: 1.50, output: 7.50,  thinking: true  },
                   "gemini-3.5-flash":                          { input: 1.50, output: 9.00,  thinking: true  },
-                  "gemini-3.5-flash-lite (text/image/video)":   { input: 0.30, output: 2.50,  thinking: false },
+                  "gemini-3.5-flash-lite (text/image/video)":   { input: 0.30, output: 2.50,  thinking: true  },
                   "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true  },
                   "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true  },
-                  "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: false },
+                  "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: true  },
                   "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true  },
                   "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true  },
-                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: false },
+                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: true  },
                 },
               },
 
