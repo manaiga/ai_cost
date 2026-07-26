@@ -112,36 +112,6 @@
           </div>
         </div>
 
-        <!-- ユースケース選択 -->
-        <div class="mt-6 border-t border-gray-100 pt-5">
-          <p class="text-sm font-medium text-gray-700 mb-3">
-            ユースケース
-            <span class="text-gray-400 font-normal ml-1">— 選ぶとおすすめモデルをハイライト表示</span>
-          </p>
-          <div class="flex flex-wrap gap-3">
-            <label v-for="(uc, key) in useCases" :key="key"
-                   class="flex items-start gap-2 cursor-pointer px-3 py-2 rounded-lg border transition-colors select-none"
-                   :class="selectedUseCase === key
-                     ? 'border-blue-400 bg-blue-50 text-blue-900'
-                     : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'">
-              <input type="radio" name="useCase" :value="key" v-model="selectedUseCase"
-                     class="mt-0.5 text-blue-600 focus:ring-blue-500 shrink-0"/>
-              <span>
-                <span class="block text-sm font-medium">{{ uc.label }}</span>
-                <span class="block text-xs text-gray-500 mt-0.5">{{ uc.description }}</span>
-              </span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border transition-colors select-none"
-                   :class="selectedUseCase === null
-                     ? 'border-blue-400 bg-blue-50 text-blue-900'
-                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'">
-              <input type="radio" name="useCase" :value="null" v-model="selectedUseCase"
-                     class="text-blue-600 focus:ring-blue-500"/>
-              <span class="text-sm">指定なし</span>
-            </label>
-          </div>
-        </div>
-
         <div class="mt-4 flex items-center gap-3 text-sm text-gray-600">
           <span v-if="exchangeRateLoading" class="flex items-center gap-1.5">
             <i class="fas fa-spinner fa-spin text-gray-400 text-xs"></i>
@@ -211,30 +181,27 @@
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
                   </th>
+                  <th @click="sortBy('eol')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="提供終了（予定）日 / End of Life">
+                    EOL <span class="text-gray-400 ml-0.5">{{ sortIcon('eol') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
-                  <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-400">
                     表示するプロバイダーを選択してください
                   </td>
                 </tr>
                 <tr v-for="model in sortedModels" :key="model.company + '/' + model.name"
-                    :class="model.recommended
-                      ? 'bg-blue-50 hover:bg-blue-100'
-                      : model.ratio === 1
-                        ? 'bg-green-50 hover:bg-green-100'
-                        : 'hover:bg-gray-50'">
+                    :class="model.ratio === 1 ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
                        class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
                   </td>
                   <td class="px-4 py-3 text-sm font-medium text-gray-900">
                     {{ model.name }}
-                    <span v-if="model.recommended"
-                          class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700">
-                      おすすめ
-                    </span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
                     <i v-if="model.thinking" class="fas fa-brain text-purple-500" title="Extended thinking対応"></i>
@@ -258,6 +225,10 @@
                     <span v-else :class="model.ratio < 5 ? 'text-gray-700' : model.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
                       ×{{ model.ratio < 10 ? model.ratio.toFixed(1) : Math.round(model.ratio).toLocaleString() }}
                     </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    <span v-if="model.eol" class="text-amber-600" title="提供終了（予定）日">{{ model.eol }}</span>
+                    <span v-else class="text-gray-300">不明</span>
                   </td>
                 </tr>
               </tbody>
@@ -284,7 +255,7 @@
               <ul class="list-disc pl-5 space-y-2">
                 <li><strong>Thinking</strong>: Gemini 公式の「Output (including thinking tokens)」などと同様、<strong>本計算でも thinking トークンは出力と同じ $/1M</strong>で積み上げます。内部推論が大きいほど実費は伸びます。</li>
                 <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。DeepSeek V4-Pro は 2026/05/31 より正式単価が 1/4 に改定（プロモーション価格が恒久化）。AWS Nova は Amazon Bedrock On-Demand 料金（Nova Micro が主要モデル中最安クラスの $0.035/$0.14）。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
-                <li><strong>おすすめ表示</strong>: ユースケース別のおすすめはコスト・性能・用途の傾向に基づく目安です。実際の精度はタスク内容に依存します。</li>
+                <li><strong>EOL（提供終了）</strong>: 各社公式の deprecation / lifecycle 情報に基づく「提供終了（予定）日」。多くは<strong>最短日で、事前告知の上で前後し得ます</strong>。現行世代など未告知のものは「不明」表記。参考: AWS Nova v1 は Nova 2 GA に伴い Legacy 化（Premier は 2026-09-14）、Gemini 2.5 系は 2026-10-16、gpt-4o は API 停止 2026-10-23。</li>
                 <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
                 <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
                 <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
@@ -310,56 +281,6 @@
             sortColumn: 'costUSD',
             sortDirection: 'asc',
             selectedCompanies: [],
-            selectedUseCase: null,
-
-            // ユースケース定義とおすすめモデル（モデル名は services 内のキーと一致させる）
-            useCases: {
-              simple: {
-                label: '単純作業',
-                description: '抽出・分類・簡単な要約',
-                recommended: [
-                  'Nova Micro',
-                  'gpt-5-nano',
-                  'gemini-2.5-flash-lite (text/image/video)',
-                  'deepseek-v4 (flash)',
-                  'claude-haiku-4-5',
-                ],
-              },
-              reasoning: {
-                label: '判断・推論',
-                description: 'ルール評価・分析・比較検討',
-                recommended: [
-                  'claude-sonnet-4-6',
-                  'gpt-5.4 (<272K ctx)',
-                  'gemini-2.5-pro (≤200k prompt)',
-                  'deepseek-v4-pro',
-                  'Nova Pro',
-                ],
-              },
-              longform: {
-                label: '長文生成',
-                description: 'コンテンツ作成・問題作成・構造化出力',
-                recommended: [
-                  'claude-opus-4-8',
-                  'claude-fable-5',
-                  'gpt-5.5 (<272K ctx)',
-                  'gemini-3.5-flash',
-                  'claude-sonnet-4-6',
-                ],
-              },
-              coding: {
-                label: 'コーディング',
-                description: 'コード生成・レビュー・デバッグ',
-                recommended: [
-                  'claude-fable-5',
-                  'claude-opus-4-8',
-                  'gpt-5.5 (<272K ctx)',
-                  'gpt-5.4 (<272K ctx)',
-                  'claude-sonnet-4-6',
-                ],
-              },
-            },
-
             // ▼各社公式 Pricing の Standard（$/1M tokens）。出典 URL は各 price_url。
             services: {
               OpenAI: {
@@ -383,7 +304,7 @@
                   // gpt-4.1 / gpt-4o ファミリー（現役・非推論 = reasoning 非対応）
                   "gpt-4.1":     { input: 2.00, output: 8.00,  thinking: false },
                   "gpt-4.1-mini":{ input: 0.40, output: 1.60,  thinking: false },
-                  "gpt-4o":      { input: 2.50, output: 10.00, thinking: false },
+                  "gpt-4o":      { input: 2.50, output: 10.00, thinking: false, eol: "2026-10-23" },
                   "gpt-4o-mini": { input: 0.15, output: 0.60,  thinking: false },
                 },
               },
@@ -416,9 +337,9 @@
                   "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true  },
                   "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true  },
                   "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: true  },
-                  "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true  },
-                  "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true  },
-                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: true  },
+                  "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true,  eol: "2026-10-16" },
+                  "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true,  eol: "2026-10-16" },
+                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: true,  eol: "2026-10-16" },
                 },
               },
 
@@ -448,7 +369,7 @@
                   "Nova Micro":   { input: 0.035, output: 0.14,  thinking: false },
                   "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false },
                   "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: false },
-                  "Nova Premier": { input: 2.50,  output: 12.50, thinking: false },
+                  "Nova Premier": { input: 2.50,  output: 12.50, thinking: false, eol: "2026-09-14" },
                   // Google Gemma 4（Bedrock ホスト、2026-06〜）: reasoning 内蔵。中身は Google 製
                   "Gemma 4 31B (Google)":     { input: 0.14, output: 0.40, thinking: true },
                   "Gemma 4 26B-A4B (Google)": { input: 0.06, output: 0.33, thinking: true }, // Bedrock価格は参考値（OpenRouter基準）
@@ -475,11 +396,6 @@
         },
 
         computed: {
-          recommendedSet() {
-            if (!this.selectedUseCase) return new Set();
-            return new Set(this.useCases[this.selectedUseCase].recommended);
-          },
-
           minCostUSD() {
             let min = Infinity;
             for (const c in this.results) {
@@ -492,7 +408,6 @@
 
           sortedModels() {
             const min = this.minCostUSD;
-            const rec = this.recommendedSet;
             const flat = [];
             for (const company in this.results) {
               if (!this.selectedCompanies.includes(company)) continue;
@@ -501,12 +416,16 @@
                   ...model,
                   company,
                   ratio: min > 0 ? model.costUSD / min : 1,
-                  recommended: rec.has(model.name),
                 });
               }
             }
             const dir = this.sortDirection === 'asc' ? 1 : -1;
             return flat.sort((a, b) => {
+              if (this.sortColumn === 'eol') {
+                const ax = a.eol || '9999-99-99';
+                const bx = b.eol || '9999-99-99';
+                return dir * ax.localeCompare(bx);
+              }
               const av = a[this.sortColumn];
               const bv = b[this.sortColumn];
               if (typeof av === 'string') return dir * av.localeCompare(bv, 'ja');
@@ -562,6 +481,7 @@
                   inputPrice: price.input,
                   outputPrice: price.output,
                   thinking: price.thinking || false,
+                  eol: price.eol || null,
                   costUSD: totalCostUSD,
                   costJPY: totalCostJPY,
                 });
