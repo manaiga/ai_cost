@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの各社モデル別 API使用料計算機（2026-07-31 更新）</title>
+    <title>生成AIの各社モデル別 API使用料計算機（2026-09-23 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -15,7 +15,7 @@
         生成AIの各社モデル別 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年7月31日（
+        最終更新日: 2026年9月23日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
@@ -254,8 +254,8 @@
             <div class="border-t border-gray-200 px-3 py-3 text-sm leading-relaxed">
               <ul class="list-disc pl-5 space-y-2">
                 <li><strong>Thinking</strong>: Gemini 公式の「Output (including thinking tokens)」などと同様、<strong>本計算でも thinking トークンは出力と同じ $/1M</strong>で積み上げます。内部推論が大きいほど実費は伸びます。</li>
-                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わる場合があります。DeepSeek V4-Pro は 2026/05/31 より正式単価が 1/4 に改定（プロモーション価格が恒久化）。AWS Nova は Amazon Bedrock On-Demand 料金（Nova Micro が主要モデル中最安クラスの $0.035/$0.14）。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
-                <li><strong>EOL（提供終了）</strong>: 各社公式の deprecation / lifecycle 情報に基づく「提供終了（予定）日」。多くは<strong>最短日で、事前告知の上で前後し得ます</strong>。現行世代など未告知のものは「不明」表記。参考: AWS Nova v1 は Nova 2 GA に伴い Legacy 化（Premier は 2026-09-14）、Gemini 2.5 系は 2026-10-16、gpt-4o は API 停止 2026-10-23。</li>
+                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。GPT-6 / GPT-5.6 は<strong>短コンテキスト帯</strong>、Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わります。<strong>期間限定価格</strong>: Gemini 3.6〜3.8 Flash は 2026-12-31 までのプロモで、2027-01-01 に $1.50/$7.50 へ倍増。GPT-5.6 Sol は 2026-11-21 までのプロモ。Claude Sonnet 5 の $2/$10 は導入価格から<strong>恒久価格に変更</strong>（予定されていた 9/1 の値上げは中止）。<strong>DeepSeek は「ピーク料金」を掲載</strong>し、オフピーク（平日 01:00-04:00 / 06:00-10:00 UTC 以外）は<strong>半額</strong>。AWS Nova は Amazon Bedrock On-Demand 料金。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
+                <li><strong>EOL（提供終了）</strong>: 各社公式の deprecation / lifecycle 情報に基づく「提供終了（予定）日」。多くは<strong>最短日で、事前告知の上で前後し得ます</strong>。現行世代など未告知のものは「不明」表記。参考: Gemini 2.5 系は 2026-10-16、gpt-4o は API 停止 2026-10-23。<strong>Nova Premier（2026-09-14）と DeepSeek V4 Flash は EOL 到達済みのため一覧から削除</strong>（V4 Flash 宛のリクエストは現在 V4.1-Flash が処理）。</li>
                 <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
                 <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
                 <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
@@ -289,8 +289,13 @@
                 api_url: "https://platform.openai.com/docs",
                 tokens_url: "https://platform.openai.com/tokenizer",
                 models: {
-                  // platform.openai.com/docs/pricing — gpt-5.6 (Sol/Terra/Luna) / gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
-                  "gpt-5.6-sol":             { input: 5.00,  output: 30.00,  thinking: true  },
+                  // platform.openai.com/docs/pricing — gpt-6 (Astra/Sol/Luna) / gpt-5.6 / gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
+                  // GPT-6 世代（2026-09）: 短コンテキスト帯の標準料金
+                  "gpt-6-astra":             { input: 10.00, output: 50.00,  thinking: true  },
+                  "gpt-6-sol":               { input: 2.00,  output: 10.00,  thinking: true  },
+                  "gpt-6-luna":              { input: 0.10,  output: 0.50,   thinking: true  },
+                  // GPT-5.6 世代（Sol は 2026-11-21 までのプロモ価格）
+                  "gpt-5.6-sol":             { input: 4.00,  output: 20.00,  thinking: true  },
                   "gpt-5.6-terra":           { input: 2.00,  output: 12.00,  thinking: true  },
                   "gpt-5.6-luna":            { input: 0.20,  output: 1.20,   thinking: true  },
                   "gpt-5.5 (<272K ctx)":     { input: 5.00,  output: 30.00,  thinking: true  },
@@ -316,10 +321,10 @@
                 tokens_url: "https://docs.anthropic.com/en/docs/build-with-claude/token-counting",
                 models: {
                   // docs.anthropic.com — 各ライン最新（Fable / Opus / Sonnet / Haiku）のみ、$/MTok
-                  "claude-fable-5":                  { input: 10.00, output: 50.00, thinking: true },
-                  "claude-opus-5":                   { input: 5.00,  output: 25.00, thinking: true },
-                  "claude-sonnet-5 (〜8/31 導入価格)": { input: 2.00,  output: 10.00, thinking: true },
-                  "claude-haiku-4-5":                { input: 1.00,  output: 5.00,  thinking: true },
+                  "claude-fable-5-1":  { input: 10.00, output: 50.00, thinking: true },
+                  "claude-opus-5-5":   { input: 4.00,  output: 20.00, thinking: true },
+                  "claude-sonnet-5":   { input: 2.00,  output: 10.00, thinking: true },
+                  "claude-haiku-4-5":  { input: 1.00,  output: 5.00,  thinking: true },
                 },
               },
 
@@ -331,11 +336,13 @@
                 models: {
                   // ai.google.dev/gemini-api/docs/pricing — Paid / Standard
                   // 2026-07-21 リリース: 3.6 Flash / 3.5 Flash-Lite（Cyber は政府・信頼パートナー限定のため未収録）
-                  "gemini-3.6-flash":                          { input: 1.50, output: 7.50,  thinking: true  },
+                  // Flash 3.6〜3.8 は 2026-12-31 までプロモ価格（2027-01-01 に $1.50/$7.50 へ倍増）
+                  "gemini-3.8-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true  },
+                  "gemini-3.7-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true  },
+                  "gemini-3.6-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true  },
                   "gemini-3.5-flash":                          { input: 1.50, output: 9.00,  thinking: true  },
                   "gemini-3.5-flash-lite (text/image/video)":   { input: 0.30, output: 2.50,  thinking: true  },
                   "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true  },
-                  "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true  },
                   "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: true  },
                   "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true,  eol: "2026-10-16" },
                   "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true,  eol: "2026-10-16" },
@@ -349,9 +356,11 @@
                 api_url: "https://api-docs.deepseek.com",
                 tokens_url: "https://api-docs.deepseek.com/quick_start/pricing",
                 models: {
-                  // api-docs.deepseek.com/quick_start/pricing — V4 正式版（Flash は 2026-07-31 の 0731 ビルドで GA）
-                  "deepseek-v4-pro":   { input: 0.435, output: 0.87, thinking: true },
-                  "deepseek-v4-flash": { input: 0.14,  output: 0.28, thinking: true },
+                  // api-docs.deepseek.com/quick_start/pricing — 掲載は「ピーク料金」。
+                  // オフピーク（平日 01:00-04:00 / 06:00-10:00 UTC 以外）は半額。
+                  // V4 Flash は引退済みで、現在は V4.1-Flash が Flash 料金で配信される。
+                  "deepseek-v4-pro":       { input: 1.32, output: 3.96, thinking: true },
+                  "deepseek-flash (V4.1)": { input: 0.30, output: 1.20, thinking: true },
                 },
               },
 
@@ -369,7 +378,6 @@
                   "Nova Micro":   { input: 0.035, output: 0.14,  thinking: false },
                   "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false },
                   "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: false },
-                  "Nova Premier": { input: 2.50,  output: 12.50, thinking: false, eol: "2026-09-14" },
                   // Google Gemma 4（Bedrock ホスト、2026-06〜）: reasoning 内蔵。中身は Google 製
                   "Gemma 4 31B (Google)":     { input: 0.14, output: 0.40, thinking: true },
                   "Gemma 4 26B-A4B (Google)": { input: 0.06, output: 0.33, thinking: true }, // Bedrock価格は参考値（OpenRouter基準）
