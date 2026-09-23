@@ -20,6 +20,7 @@
         <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" class="text-blue-600 hover:underline">Anthropic</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://api-docs.deepseek.com/quick_start/pricing" class="text-blue-600 hover:underline">DeepSeek</a> /
+        <a href="https://docs.x.ai/developers/pricing" class="text-blue-600 hover:underline">xAI</a> /
         <a href="https://aws.amazon.com/bedrock/pricing/" class="text-blue-600 hover:underline">AWS Bedrock</a>
         ）
       </p>
@@ -254,7 +255,7 @@
             <div class="border-t border-gray-200 px-3 py-3 text-sm leading-relaxed">
               <ul class="list-disc pl-5 space-y-2">
                 <li><strong>Thinking</strong>: Gemini 公式の「Output (including thinking tokens)」などと同様、<strong>本計算でも thinking トークンは出力と同じ $/1M</strong>で積み上げます。内部推論が大きいほど実費は伸びます。</li>
-                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。GPT-6 / GPT-5.6 は<strong>短コンテキスト帯</strong>、Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」の掲載に準拠。長いプロンプトでは公式どおり単価が変わります。<strong>期間限定価格</strong>: Gemini 3.6〜3.8 Flash は 2026-12-31 までのプロモで、2027-01-01 に $1.50/$7.50 へ倍増。GPT-5.6 Sol は 2026-11-21 までのプロモ。Claude Sonnet 5 の $2/$10 は導入価格から<strong>恒久価格に変更</strong>（予定されていた 9/1 の値上げは中止）。<strong>DeepSeek は「ピーク料金」を掲載</strong>し、オフピーク（平日 01:00-04:00 / 06:00-10:00 UTC 以外）は<strong>半額</strong>。AWS Nova は Amazon Bedrock On-Demand 料金。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
+                <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。GPT-6 / GPT-5.6 は<strong>短コンテキスト帯</strong>、Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」、<strong>Grok は「200k 未満」</strong>（200k 以上は入力・出力とも<strong>倍額</strong>）の掲載に準拠。長いプロンプトでは公式どおり単価が変わります。<strong>期間限定価格</strong>: Gemini 3.6〜3.8 Flash は 2026-12-31 までのプロモで、2027-01-01 に $1.50/$7.50 へ倍増。GPT-5.6 Sol は 2026-11-21 までのプロモ。Claude Sonnet 5 の $2/$10 は導入価格から<strong>恒久価格に変更</strong>（予定されていた 9/1 の値上げは中止）。<strong>DeepSeek は「ピーク料金」を掲載</strong>し、オフピーク（平日 01:00-04:00 / 06:00-10:00 UTC 以外）は<strong>半額</strong>。AWS Nova は Amazon Bedrock On-Demand 料金。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
                 <li><strong>EOL（提供終了）</strong>: 各社公式の deprecation / lifecycle 情報に基づく「提供終了（予定）日」。多くは<strong>最短日で、事前告知の上で前後し得ます</strong>。現行世代など未告知のものは「不明」表記。参考: Gemini 2.5 系は 2026-10-16、gpt-4o は API 停止 2026-10-23。<strong>Nova Premier（2026-09-14）と DeepSeek V4 Flash は EOL 到達済みのため一覧から削除</strong>（V4 Flash 宛のリクエストは現在 V4.1-Flash が処理）。</li>
                 <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
                 <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
@@ -361,6 +362,22 @@
                   // V4 Flash は引退済みで、現在は V4.1-Flash が Flash 料金で配信される。
                   "deepseek-v4-pro":       { input: 1.32, output: 3.96, thinking: true },
                   "deepseek-flash (V4.1)": { input: 0.30, output: 1.20, thinking: true },
+                },
+              },
+
+              xAI: {
+                site_url: "https://x.ai",
+                price_url: "https://docs.x.ai/developers/pricing",
+                api_url: "https://docs.x.ai",
+                tokens_url: "https://docs.x.ai/developers/pricing",
+                models: {
+                  // docs.x.ai/developers/pricing — 200k トークン未満の帯。200k 以上は入出力とも倍額。
+                  // Grok 4.x は全て reasoning 対応。Grok Build 0.1 は推論が常時オン（effort 変更不可）。
+                  "grok-4.7 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true },
+                  "grok-4.6 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true },
+                  "grok-4.5 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true },
+                  "grok-4.3 (<200k ctx)":     { input: 1.25, output: 2.50, thinking: true },
+                  "grok-build-0.1 (<200k ctx)": { input: 1.00, output: 2.00, thinking: true },
                 },
               },
 
