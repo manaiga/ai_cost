@@ -11,6 +11,23 @@
   </head>
   <body class="bg-gray-50">
     <div id="app" class="container mx-auto px-4 py-8 max-w-7xl">
+
+      <!-- ページ間ナビ -->
+      <nav class="flex flex-wrap items-center gap-2 mb-5 text-sm">
+        <span class="px-3 py-1.5 rounded-md border border-blue-400 bg-blue-50 text-blue-900 font-medium">
+          <i class="fas fa-font mr-1.5 text-blue-500"></i>テキスト生成
+        </span>
+        <a href="image.html"
+           class="px-3 py-1.5 rounded-md border border-gray-200 bg-white text-gray-700
+                  hover:border-gray-300 hover:text-blue-600 transition-colors">
+          <i class="fas fa-image mr-1.5 text-gray-400"></i>画像生成
+        </a>
+        <span class="px-3 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+              title="準備中">
+          <i class="fas fa-microphone mr-1.5"></i>音声生成（準備中）
+        </span>
+      </nav>
+
       <h1 class="text-3xl font-bold text-gray-900 mb-2">
         生成AIの各社モデル別 API使用料計算機
       </h1>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>生成AIの画像生成 API使用料計算機（2026-09-25 更新）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-7xl">
+
+      <!-- ページ間ナビ -->
+      <nav class="flex flex-wrap items-center gap-2 mb-5 text-sm">
+        <a href="index.html"
+           class="px-3 py-1.5 rounded-md border border-gray-200 bg-white text-gray-700
+                  hover:border-gray-300 hover:text-blue-600 transition-colors">
+          <i class="fas fa-font mr-1.5 text-gray-400"></i>テキスト生成
+        </a>
+        <span class="px-3 py-1.5 rounded-md border border-blue-400 bg-blue-50 text-blue-900 font-medium">
+          <i class="fas fa-image mr-1.5 text-blue-500"></i>画像生成
+        </span>
+        <span class="px-3 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+              title="準備中">
+          <i class="fas fa-microphone mr-1.5"></i>音声生成（準備中）
+        </span>
+      </nav>
+
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        生成AIの画像生成 API使用料計算機
+      </h1>
+      <p class="text-sm text-gray-600 mb-6">
+        最終更新日: 2026年9月25日（
+        <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
+        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
+        <a href="https://docs.x.ai/developers/pricing" class="text-blue-600 hover:underline">xAI</a> /
+        <a href="https://bfl.ai/pricing" class="text-blue-600 hover:underline">Black Forest Labs</a> /
+        <a href="https://platform.stability.ai/pricing" class="text-blue-600 hover:underline">Stability AI</a> /
+        <a href="https://about.ideogram.ai/api-pricing" class="text-blue-600 hover:underline">Ideogram</a> /
+        <a href="https://www.recraft.ai/docs" class="text-blue-600 hover:underline">Recraft</a>
+        ）
+      </p>
+
+      <details class="mb-6 rounded-lg border border-gray-200 bg-gray-50 group">
+        <summary
+          class="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-gray-900
+                 marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+          <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform group-open:rotate-90"></i>
+          画像生成の料金の読み方（テキストとの違い）
+        </summary>
+        <div class="border-t border-gray-200 px-4 py-3 text-sm text-gray-700 leading-relaxed space-y-2">
+          <p>
+            画像生成はテキストと違い <strong>1枚いくら</strong> が基本単位です。ただし課金方式は2種類あり、
+            <strong>定額/枚</strong>（xAI・Flux・Ideogram 等）と
+            <strong>トークン課金</strong>（OpenAI・Gemini）が混在します。
+            本表は後者も <strong>$/枚に換算</strong>して並べ、そのまま比較できるようにしています。
+          </p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>解像度を必ず見てください</strong>。同じモデルでも 1K と 4K で 2〜4倍変わります。
+              表の「基準解像度」は、その $/枚 が成立する条件です。これを無視した比較は意味を持ちません。</li>
+            <li><strong>品質設定でも大きく動きます</strong>。例えば GPT Image 2.5 は 1024² でも
+              medium $0.013 → high $0.053 → max $0.211 と <strong>16倍</strong>の開きがあるため、段階ごとに別行にしています。</li>
+            <li><strong>編集・img2img は別料金のことがあります</strong>。xAI は入力画像1枚につき +$0.01、
+              Flux.2 Pro の編集は生成より高め（約 $0.045/MP）です。本表は<strong>テキストから新規生成</strong>の単価です。</li>
+            <li><strong>Batch API を使えば概ね半額</strong>になります（Gemini は公式に Batch 価格を掲載）。本表は Standard 価格です。</li>
+            <li>プロンプト側の入力課金は1枚あたり $0.0001 程度で誤差のため、本計算では未考慮です。</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 入力フォーム -->
+      <form @submit.prevent="calculateCosts" class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="numImages"
+                   class="block text-sm font-medium text-gray-700 mb-2">
+              生成枚数
+            </label>
+            <input type="number" id="numImages" v-model.number="numImages" min="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          focus:border-transparent" placeholder="例: 1000"/>
+            <p class="mt-1 text-xs text-gray-500">テキストから新規生成する枚数（編集・リトライは別途）</p>
+          </div>
+        </div>
+
+        <div class="mt-5 border-t border-gray-100 pt-5">
+          <p class="text-sm font-medium text-gray-700 mb-3">表示するプロバイダー</p>
+          <div class="flex flex-wrap gap-3">
+            <label v-for="(svc, company) in services" :key="company"
+                   class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border transition-colors select-none"
+                   :class="selectedCompanies.includes(company)
+                     ? 'border-blue-400 bg-blue-50 text-blue-900'
+                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'">
+              <input type="checkbox" :value="company" v-model="selectedCompanies"
+                     class="text-blue-600 focus:ring-blue-500"/>
+              <span class="text-sm">{{ company }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3 text-sm text-gray-600">
+          <span v-if="exchangeRateLoading" class="flex items-center gap-1.5">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-xs"></i>
+            為替レート取得中…
+          </span>
+          <span v-else>
+            為替レート: <strong>$1 = ¥{{ exchangeRate }}</strong>
+            <span v-if="exchangeRateDate" class="text-gray-400 ml-1">（{{ exchangeRateDate }} 取得）</span>
+            <span v-else class="text-gray-400 ml-1">（フォールバック値）</span>
+          </span>
+        </div>
+
+        <button type="submit"
+                class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md
+                       hover:bg-blue-700 focus:outline-none focus:ring-2
+                       focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+          計算する
+        </button>
+      </form>
+
+      <!-- 結果テーブル -->
+      <div v-if="calculated">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th @click="sortBy('company')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
+                  </th>
+                  <th @click="sortBy('name')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    モデル <span class="text-gray-400 ml-0.5">{{ sortIcon('name') }}</span>
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      title="この単価が成立する解像度">
+                    基準解像度
+                  </th>
+                  <th @click="sortBy('perImage')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    単価 ($/枚) <span class="text-gray-400 ml-0.5">{{ sortIcon('perImage') }}</span>
+                  </th>
+                  <th @click="sortBy('costUSD')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    合計費用 <span class="text-gray-400 ml-0.5">{{ sortIcon('costUSD') }}</span>
+                  </th>
+                  <th @click="sortBy('ratio')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                  </th>
+                  <th @click="sortBy('eol')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="提供終了（予定）日 / End of Life">
+                    EOL <span class="text-gray-400 ml-0.5">{{ sortIcon('eol') }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-if="sortedModels.length === 0">
+                  <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
+                    表示するプロバイダーを選択してください
+                  </td>
+                </tr>
+                <tr v-for="model in sortedModels" :key="model.company + '/' + model.name"
+                    :class="model.ratio === 1 ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
+                       class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                    {{ model.name }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    {{ model.res }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(model.perImage) }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(model.costUSD) }}
+                    <span class="text-gray-500">(¥{{ fmt(model.costJPY) }})</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                    <span v-if="model.ratio === 1"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">
+                      最安
+                    </span>
+                    <span v-else :class="model.ratio < 5 ? 'text-gray-700' : model.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
+                      ×{{ model.ratio < 10 ? model.ratio.toFixed(1) : Math.round(model.ratio).toLocaleString() }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    <span v-if="model.eol" class="text-amber-600" title="提供終了（予定）日">{{ model.eol }}</span>
+                    <span v-else class="text-gray-300">不明</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <details class="mt-6 rounded-lg border border-gray-200 bg-white group">
+          <summary
+            class="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-gray-900
+                   marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+            <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform group-open:rotate-90"></i>
+            前提条件・免責
+          </summary>
+          <div class="border-t border-gray-200 px-4 py-4 text-sm text-gray-700 leading-relaxed">
+            <ul class="list-disc pl-5 space-y-2">
+              <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong> 価格、<strong>テキストからの新規生成</strong>。Batch を使えば概ね半額です。編集 / img2img は別料金の場合があります（xAI は入力画像1枚につき +$0.01）。</li>
+              <li><strong>$/枚への換算</strong>: OpenAI と Gemini は<strong>トークン課金</strong>のため、公式が示す代表的な1枚あたりの消費量で $/枚 に換算しています。実際のプロンプトや出力内容で前後します。</li>
+              <li><strong>基準解像度</strong>: その単価が成立する解像度です。4K など高解像度では 2〜4倍になります（例: Nano Banana Pro は 1K/2K $0.134 → 4K $0.24）。</li>
+              <li><strong>Imagen 4 は Vertex AI の料金</strong>で、Gemini Developer API の価格表には掲載がありません（$0.02 / $0.04 / $0.06 は二次情報に基づく参考値）。</li>
+              <li><strong>一次提供元のみ掲載</strong>: fal / Replicate / Together 等のアグリゲータは同じモデルでもホストごとに価格が異なるため、モデル提供元の公式価格に統一しています。</li>
+              <li><strong>Midjourney は未収録</strong>: 従量課金ではなく<strong>サブスク</strong>（Basic $10/月〜）のため、$/枚の表に混ぜると比較が歪みます。</li>
+              <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えるためです。</li>
+              <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
+              <li>料金は変動します。確定は各プロバイダの usage 表示を参照してください。</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            numImages: 1000,
+            calculated: false,
+            results: {},
+            sortColumn: 'costUSD',
+            sortDirection: 'asc',
+            exchangeRate: 150,
+            exchangeRateDate: null,
+            exchangeRateLoading: true,
+            selectedCompanies: [],
+
+            // ▼各社公式の Standard 価格。テキストからの新規生成、$/枚。
+            services: {
+              OpenAI: {
+                site_url: "https://openai.com",
+                price_url: "https://platform.openai.com/docs/pricing",
+                // GPT Image 2.5 はトークン課金（$30/M 画像出力トークン）。
+                // 1024x1024 での代表的な消費量から $/枚 に換算した公表値。
+                models: {
+                  "GPT Image 2.5 (medium)": { perImage: 0.013, res: "1024×1024" },
+                  "GPT Image 2.5 (high)":   { perImage: 0.053, res: "1024×1024" },
+                  "GPT Image 2.5 (max)":    { perImage: 0.211, res: "1024×1024" },
+                },
+              },
+
+              Google: {
+                site_url: "https://ai.google.dev",
+                price_url: "https://ai.google.dev/gemini-api/docs/pricing",
+                // Gemini 系はトークン課金（画像出力 $30〜$120/M）。公式が併記する $/枚 を採用。
+                // Imagen 4 は Vertex AI 側の料金で、Gemini API 価格表には非掲載（参考値）。
+                models: {
+                  "Gemini 3 Pro Image (Nano Banana Pro)":        { perImage: 0.134,  res: "1K–2K" },
+                  "Gemini 3.1 Flash Image (Nano Banana 2)":      { perImage: 0.067,  res: "1K" },
+                  "Gemini 3.1 Flash Lite Image (NB2 Lite)":      { perImage: 0.0336, res: "1K" },
+                  "Gemini 2.5 Flash Image":                      { perImage: 0.039,  res: "1K", eol: "2026-10-02" },
+                  "Imagen 4 Fast (Vertex・参考値)":               { perImage: 0.02,   res: "1024×1024" },
+                  "Imagen 4 Standard (Vertex・参考値)":           { perImage: 0.04,   res: "1024×1024" },
+                  "Imagen 4 Ultra (Vertex・参考値)":              { perImage: 0.06,   res: "1024×1024" },
+                },
+              },
+
+              xAI: {
+                site_url: "https://x.ai",
+                price_url: "https://docs.x.ai/developers/pricing",
+                // 定額/枚。img2img は入力画像1枚につき +$0.01。
+                models: {
+                  "Grok Imagine Image 2.0":                { perImage: 0.04, res: "1K / 2K" },
+                  "Grok Imagine Image 2.0 (Quality Mode)": { perImage: 0.05, res: "1K / 2K" },
+                },
+              },
+
+              "Black Forest Labs": {
+                site_url: "https://bfl.ai",
+                price_url: "https://bfl.ai/pricing",
+                // 定額/枚。Flux.2 Pro の編集は生成より高め（約 $0.045/MP）。
+                models: {
+                  "FLUX.2 [schnell]": { perImage: 0.015, res: "1MP" },
+                  "FLUX.2 [dev]":     { perImage: 0.025, res: "1MP" },
+                  "FLUX.2 [pro]":     { perImage: 0.05,  res: "1MP" },
+                },
+              },
+
+              "Stability AI": {
+                site_url: "https://stability.ai",
+                price_url: "https://platform.stability.ai/pricing",
+                models: {
+                  "Stable Image Ultra": { perImage: 0.08, res: "1MP" },
+                },
+              },
+
+              Ideogram: {
+                site_url: "https://ideogram.ai",
+                price_url: "https://about.ideogram.ai/api-pricing",
+                models: {
+                  "Ideogram 3.0 Standard": { perImage: 0.03, res: "1024×1024" },
+                  "Ideogram 3.0 Quality":  { perImage: 0.09, res: "1024×1024" },
+                },
+              },
+
+              Recraft: {
+                site_url: "https://www.recraft.ai",
+                price_url: "https://www.recraft.ai/docs",
+                // 2026-07-31 に値下げ。
+                models: {
+                  "Recraft V4.1":     { perImage: 0.035, res: "1024×1024" },
+                  "Recraft V4.1 Pro": { perImage: 0.21,  res: "1024×1024" },
+                },
+              },
+            },
+          };
+        },
+
+        async mounted() {
+          this.selectedCompanies = Object.keys(this.services);
+          try {
+            const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY');
+            const data = await res.json();
+            this.exchangeRate = Math.round(data.rates.JPY * 10) / 10;
+            this.exchangeRateDate = data.date;
+          } catch (_) {
+            // フォールバック値 150 を維持
+          } finally {
+            this.exchangeRateLoading = false;
+          }
+        },
+
+        computed: {
+          minCostUSD() {
+            let min = Infinity;
+            for (const c in this.results) {
+              for (const m of this.results[c]) {
+                if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
+              }
+            }
+            return min === Infinity ? 0 : min;
+          },
+
+          sortedModels() {
+            const min = this.minCostUSD;
+            const flat = [];
+            for (const company in this.results) {
+              if (!this.selectedCompanies.includes(company)) continue;
+              for (const model of this.results[company]) {
+                flat.push({
+                  ...model,
+                  company,
+                  ratio: min > 0 ? model.costUSD / min : 1,
+                });
+              }
+            }
+            const dir = this.sortDirection === 'asc' ? 1 : -1;
+            return flat.sort((a, b) => {
+              if (this.sortColumn === 'eol') {
+                const ax = a.eol || '9999-99-99';
+                const bx = b.eol || '9999-99-99';
+                return dir * ax.localeCompare(bx);
+              }
+              const av = a[this.sortColumn];
+              const bv = b[this.sortColumn];
+              if (typeof av === 'string') return dir * av.localeCompare(bv, 'ja');
+              return dir * (av - bv);
+            });
+          },
+        },
+
+        methods: {
+          sortBy(col) {
+            if (this.sortColumn === col) {
+              this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              this.sortColumn = col;
+              this.sortDirection = 'asc';
+            }
+          },
+
+          sortIcon(col) {
+            if (this.sortColumn !== col) return '↕';
+            return this.sortDirection === 'asc' ? '▲' : '▼';
+          },
+
+          fmt(n) {
+            if (n === 0) return '0';
+            if (n % 1 === 0) return n.toLocaleString();
+            if (n < 0.01) return n.toFixed(4).replace(/\.?0+$/, '');
+            return n.toFixed(3).replace(/\.?0+$/, '');
+          },
+
+          // コスト計算（新規生成のみ。編集・リトライ・Batch 割引は未考慮）
+          calculateCosts() {
+            this.results = {};
+            for (let company in this.services) {
+              const companyData = this.services[company];
+              this.results[company] = [];
+
+              for (let model in companyData.models) {
+                const spec = companyData.models[model];
+                const totalCostUSD = spec.perImage * (Number(this.numImages) || 0);
+
+                this.results[company].push({
+                  name: model,
+                  perImage: spec.perImage,
+                  res: spec.res,
+                  eol: spec.eol || null,
+                  costUSD: totalCostUSD,
+                  costJPY: totalCostUSD * this.exchangeRate,
+                });
+              }
+            }
+            this.calculated = true;
+          },
+        },
+      }).mount('#app');
+    </script>
+  </body>
+</html>
