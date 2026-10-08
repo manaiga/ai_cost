@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの画像生成 API使用料計算機（2026-09-25 更新）</title>
+    <title>生成AIの画像生成 API使用料計算機（2026-10-08 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -32,7 +32,7 @@
         生成AIの画像生成 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年9月25日（
+        最終更新日: 2026年10月8日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://docs.x.ai/developers/pricing" class="text-blue-600 hover:underline">xAI</a> /
@@ -218,7 +218,7 @@
               <li><strong>Imagen 4 は Vertex AI の料金</strong>で、Gemini Developer API の価格表には掲載がありません（$0.02 / $0.04 / $0.06 は二次情報に基づく参考値）。</li>
               <li><strong>一次提供元のみ掲載</strong>: fal / Replicate / Together 等のアグリゲータは同じモデルでもホストごとに価格が異なるため、モデル提供元の公式価格に統一しています。</li>
               <li><strong>Midjourney は未収録</strong>: 従量課金ではなく<strong>サブスク</strong>（Basic $10/月〜）のため、$/枚の表に混ぜると比較が歪みます。</li>
-              <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えるためです。</li>
+              <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えたためです。<strong>Gemini 2.5 Flash Image も 2026-10-02 に EOL 到達したため削除</strong>しました。</li>
               <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
               <li>料金は変動します。確定は各プロバイダの usage 表示を参照してください。</li>
             </ul>
@@ -266,7 +266,6 @@
                   "Gemini 3 Pro Image (Nano Banana Pro)":        { perImage: 0.134,  res: "1K–2K" },
                   "Gemini 3.1 Flash Image (Nano Banana 2)":      { perImage: 0.067,  res: "1K" },
                   "Gemini 3.1 Flash Lite Image (NB2 Lite)":      { perImage: 0.0336, res: "1K" },
-                  "Gemini 2.5 Flash Image":                      { perImage: 0.039,  res: "1K", eol: "2026-10-02" },
                   "Imagen 4 Fast (Vertex・参考値)":               { perImage: 0.02,   res: "1024×1024" },
                   "Imagen 4 Standard (Vertex・参考値)":           { perImage: 0.04,   res: "1024×1024" },
                   "Imagen 4 Ultra (Vertex・参考値)":              { perImage: 0.06,   res: "1024×1024" },
