@@ -309,11 +309,13 @@
           <div class="border-t border-gray-200 px-4 py-4 text-sm text-gray-700 leading-relaxed">
             <ul class="list-disc pl-5 space-y-2">
               <li><strong>換算に使っている仮定</strong>:
-                音声1分 = <strong>2,400 音声トークン</strong>、
+                音声1分 = <strong>OpenAI 2,400 / Google 1,500 音声トークン</strong>、
                 音声1分 = <strong>{{ charsPerMin.toLocaleString() }} 文字</strong>（{{ langs[lang].label }}）、
                 テキスト <strong>{{ langs[lang].charsPerToken }} 文字 = 1 トークン</strong>。
-                音声トークン数は OpenAI 公式が transcribe 系に併記している「$/分」目安と $/1Mトークン 単価から逆算した値です
-                （$0.006/分 ÷ $2.50/1M ≒ 2,400 トークン/分）。コーデックやプロバイダーで前後します。
+                音声トークン数は<strong>提供元ごとに違う</strong>ため個別に逆算しています。
+                OpenAI は transcribe 系に併記される「$/分」目安から（$0.006/分 ÷ $2.50/1M ≒ 2,400 トークン/分 = 40/秒）、
+                Google は TTS に併記される「10秒あたり」から（$0.00225/10s ÷ $9.00/1M ≒ 1,500 トークン/分 = 25/秒）。
+                コーデックや音声内容で前後します。
               </li>
               <li><strong>$/音声1分 は比較のための換算値</strong>です。公式が定額/分で出しているものはその値をそのまま使い、
                 文字課金・トークン課金のものは上記の仮定で割り戻しています。実費はプロンプトや発話内容で変動します。</li>
@@ -339,9 +341,11 @@
     <script>
       const { createApp } = Vue;
 
-      // 音声1分あたりの音声トークン数。
-      // OpenAI 公式が transcribe 系に併記する $/分 目安から逆算（$0.006/min ÷ $2.50/1M ≒ 2,400）。
-      const AUDIO_TOK_PER_MIN = 2400;
+      // 音声1分あたりの音声トークン数は提供元で異なるため、公式の記載から逆算して個別に持つ。
+      //  OpenAI: transcribe 系に併記される $/分 目安から → $0.006/min ÷ $2.50/1M ≒ 2,400 tok/min（40/秒）
+      //  Google: TTS に併記される「10秒あたり」から    → $0.00225/10s ÷ $9.00/1M ≒ 1,500 tok/min（25/秒）
+      const AUDIO_TOK_PER_MIN = { OpenAI: 2400, Google: 1500 };
+      const AUDIO_TOK_PER_MIN_DEFAULT = 2400;
 
       createApp({
         data() {
@@ -536,11 +540,12 @@
           },
 
           // 1分の音声あたりの単価に正規化する
-          perMinuteOf(spec) {
+          perMinuteOf(spec, company) {
             if (spec.perMin != null) return spec.perMin;
 
             const cpm = this.charsPerMin;
             const cpt = this.charsPerToken;
+            const atm = AUDIO_TOK_PER_MIN[company] ?? AUDIO_TOK_PER_MIN_DEFAULT;
 
             if (spec.perMChar != null) {
               // $/100万文字 × 1分あたりの文字数
@@ -551,18 +556,18 @@
             // 読み上げ: テキスト入力 + 音声出力
             if (spec.textInPerMTok != null)   cost += spec.textInPerMTok   * (cpm / cpt) / 1e6;
             if (spec.audioOutPerMTok != null && spec.audioInPerMTok == null) {
-              cost += spec.audioOutPerMTok * AUDIO_TOK_PER_MIN / 1e6;
+              cost += spec.audioOutPerMTok * atm / 1e6;
             }
             // 文字起こし: 音声入力 + テキスト出力
             if (spec.audioInPerMTok != null && spec.textOutPerMTok != null) {
-              cost += spec.audioInPerMTok * AUDIO_TOK_PER_MIN / 1e6;
+              cost += spec.audioInPerMTok * atm / 1e6;
               cost += spec.textOutPerMTok * (cpm / cpt) / 1e6;
             }
             // リアルタイム: 音声入力 + 音声出力（入出力比で按分）
             if (spec.audioInPerMTok != null && spec.audioOutPerMTok != null) {
               const outShare = Math.min(100, Math.max(0, Number(this.rtOutputRatio) || 0)) / 100;
-              cost += spec.audioInPerMTok  * AUDIO_TOK_PER_MIN * (1 - outShare) / 1e6;
-              cost += spec.audioOutPerMTok * AUDIO_TOK_PER_MIN * outShare / 1e6;
+              cost += spec.audioInPerMTok  * atm * (1 - outShare) / 1e6;
+              cost += spec.audioOutPerMTok * atm * outShare / 1e6;
             }
             return cost;
           },
@@ -592,7 +597,7 @@
                 for (const name in tree[company]) {
                   const spec = tree[company][name];
                   const kind = this.billingKindOf(spec);
-                  const perMin = this.perMinuteOf(spec);
+                  const perMin = this.perMinuteOf(spec, company);
                   if (!best[kind] || perMin < best[kind].perMin) {
                     best[kind] = { kind, company, name, perMin, cost: perMin * minutes };
                   }
@@ -634,7 +639,7 @@
             for (const company in tree) {
               for (const name in tree[company]) {
                 const spec = tree[company][name];
-                const perMin = this.perMinuteOf(spec);
+                const perMin = this.perMinuteOf(spec, company);
                 const costUSD = perMin * minutes;
                 out.push({
                   company, name,
