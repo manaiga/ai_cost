@@ -8,7 +8,7 @@
 |---|---|---|
 | `index.html` | テキスト生成 | $/1M tokens（入力・出力の2軸）|
 | `image.html` | 画像生成 | $/枚（解像度・品質で変動）|
-| （予定） | 音声生成 | 未着手 |
+| `audio.html` | 音声（読み上げ / 文字起こし / リアルタイム）| タブごとに別単位 |
 
 各ページはヘッダーのナビゲーションで相互に行き来できます。
 
@@ -30,6 +30,15 @@
 - **定額/枚**（xAI・Flux・Ideogram 等）と**トークン課金**（OpenAI・Gemini）が混在するため、後者は **$/枚に換算**して並べる
 - **基準解像度列**が必須。同じモデルでも 1K と 4K で 2〜4倍変わるため、これを無視した比較は意味を持たない
 - 品質段階で大きく動くもの（GPT Image 2.5 の medium / high / max 等）は**段階ごとに別行**にする
+
+### 音声（audio.html）
+- **課金単位が3種類混在**するため、1つの表に混ぜず**3タブに分離**している
+  （同じ OpenAI 内でも `tts-1` は $/100万文字、`gpt-transcribe` は $/分、`gpt-realtime-2.1` は $/100万音声トークン）
+- タブをまたいだ比較は想定しない。各タブ内で単位を統一し、比較用に **$/音声1分**へ正規化した列を持つ
+- **言語設定が結果を変える**: 文字課金のモデルは1分あたりの文字数が少ない日本語で有利、
+  音声トークン課金のモデルは言語によらず一定。**言語によって有利不利が逆転する**ため言語セレクタは必須
+- 換算の仮定: 音声1分 = 2,400 音声トークン（OpenAI 公式の $/分 目安から逆算）、
+  日本語 400字/分・英語 1,000字/分
 
 ### 更新手順
 1. 各社の公式料金ページを確認
@@ -56,6 +65,12 @@
 - Stability AI: https://platform.stability.ai/pricing
 - Ideogram: https://about.ideogram.ai/api-pricing
 - Recraft: https://www.recraft.ai/docs
+
+### 音声
+- OpenAI: https://developers.openai.com/api/docs/pricing
+- Google: https://ai.google.dev/gemini-api/docs/pricing
+- ElevenLabs: https://elevenlabs.io/pricing/api
+- Deepgram: https://deepgram.com/pricing
 
 ## 技術仕様
 - Vue.js 3 + Tailwind CSS（いずれも CDN 読み込み、ビルド不要）

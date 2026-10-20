@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>生成AIの音声 API使用料計算機（2026-10-20 更新）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-7xl">
+
+      <!-- ページ間ナビ -->
+      <nav class="flex flex-wrap items-center gap-2 mb-5 text-sm">
+        <a href="index.html"
+           class="px-3 py-1.5 rounded-md border border-gray-200 bg-white text-gray-700
+                  hover:border-gray-300 hover:text-blue-600 transition-colors">
+          <i class="fas fa-font mr-1.5 text-gray-400"></i>テキスト生成
+        </a>
+        <a href="image.html"
+           class="px-3 py-1.5 rounded-md border border-gray-200 bg-white text-gray-700
+                  hover:border-gray-300 hover:text-blue-600 transition-colors">
+          <i class="fas fa-image mr-1.5 text-gray-400"></i>画像生成
+        </a>
+        <span class="px-3 py-1.5 rounded-md border border-blue-400 bg-blue-50 text-blue-900 font-medium">
+          <i class="fas fa-microphone mr-1.5 text-blue-500"></i>音声
+        </span>
+      </nav>
+
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        生成AIの音声 API使用料計算機
+      </h1>
+      <p class="text-sm text-gray-600 mb-6">
+        最終更新日: 2026年10月20日（
+        <a href="https://developers.openai.com/api/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
+        <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
+        <a href="https://elevenlabs.io/pricing/api" class="text-blue-600 hover:underline">ElevenLabs</a> /
+        <a href="https://deepgram.com/pricing" class="text-blue-600 hover:underline">Deepgram</a>
+        ）
+      </p>
+
+      <details class="mb-6 rounded-lg border border-amber-200 bg-amber-50 group" open>
+        <summary
+          class="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-amber-900
+                 marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+          <i class="fas fa-chevron-right text-amber-400 text-xs transition-transform group-open:rotate-90"></i>
+          音声の料金はなぜ3つに分けてあるのか（必読）
+        </summary>
+        <div class="border-t border-amber-200 px-4 py-3 text-sm text-amber-900 leading-relaxed space-y-2">
+          <p>
+            音声APIは<strong>課金単位が3種類混在</strong>していて、しかも<strong>やりたいことが3つに分かれます</strong>。
+            例えば OpenAI 1社の中だけでも <code class="text-xs bg-white px-1 rounded">tts-1</code> は
+            <strong>$/100万文字</strong>、<code class="text-xs bg-white px-1 rounded">gpt-transcribe</code> は
+            <strong>$/分</strong>、<code class="text-xs bg-white px-1 rounded">gpt-realtime-2.1</code> は
+            <strong>$/100万音声トークン</strong>です。
+          </p>
+          <p>
+            これらを1つの表に並べて「最安比」を出しても意味がないため、
+            <strong>読み上げ / 文字起こし / リアルタイム会話</strong>の3タブに分け、
+            <strong>各タブ内で単位を統一</strong>しています。タブをまたいだ比較は想定していません
+            （TTSモデルとSTTモデルを比べる人はいないため）。
+          </p>
+          <p class="font-medium">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            日本語で使うなら「言語」の設定が結果を大きく変えます。
+          </p>
+          <p>
+            文字課金のモデルは「1分の音声に必要な文字数」が少ない<strong>日本語で有利</strong>になり、
+            音声トークン課金のモデルは言語に関係なく一定です。つまり<strong>言語によって有利不利が逆転します</strong>。
+            日本語（約400字/分）と英語（約1,000字/分）で切り替えて確認してください。
+          </p>
+        </div>
+      </details>
+
+      <!-- タブ -->
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button v-for="(m, key) in modes" :key="key" @click="mode = key"
+                class="px-4 py-2 rounded-lg border text-sm font-medium transition-colors"
+                :class="mode === key
+                  ? 'border-blue-400 bg-blue-50 text-blue-900'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'">
+          <i :class="m.icon" class="mr-1.5"></i>{{ m.label }}
+          <span class="ml-1 text-xs font-normal opacity-70">{{ m.unit }}</span>
+        </button>
+      </div>
+
+      <!-- 入力フォーム -->
+      <form @submit.prevent="calculate" class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+          <div v-if="mode === 'tts'">
+            <label for="chars" class="block text-sm font-medium text-gray-700 mb-2">読み上げる文字数</label>
+            <input type="number" id="chars" v-model.number="chars" min="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 100000"/>
+            <p class="mt-1 text-xs text-gray-500">
+              ≒ {{ fmt(chars / charsPerMin) }} 分の音声（{{ lang === 'ja' ? '日本語 400字/分' : '英語 1,000字/分' }}）
+            </p>
+          </div>
+
+          <div v-if="mode === 'stt'">
+            <label for="sttMin" class="block text-sm font-medium text-gray-700 mb-2">文字起こしする音声の長さ（分）</label>
+            <input type="number" id="sttMin" v-model.number="sttMinutes" min="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 6000"/>
+            <p class="mt-1 text-xs text-gray-500">≒ {{ fmt(sttMinutes / 60) }} 時間</p>
+          </div>
+
+          <div v-if="mode === 'realtime'">
+            <label for="rtMin" class="block text-sm font-medium text-gray-700 mb-2">会話の長さ（分）</label>
+            <input type="number" id="rtMin" v-model.number="rtMinutes" min="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 1000"/>
+            <p class="mt-1 text-xs text-gray-500">ユーザーとAIの発話を合計した通話時間</p>
+          </div>
+
+          <div v-if="mode === 'realtime'">
+            <label for="rtRatio" class="block text-sm font-medium text-gray-700 mb-2">
+              AIの発話が占める割合（%）
+            </label>
+            <input type="number" id="rtRatio" v-model.number="rtOutputRatio" min="0" max="100"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md
+                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 50"/>
+            <p class="mt-1 text-xs text-gray-500">
+              出力(AI) {{ rtOutputRatio }}% / 入力(ユーザー) {{ 100 - rtOutputRatio }}%。出力の方が単価が高い
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">言語</label>
+            <div class="flex gap-2">
+              <label v-for="(l, key) in langs" :key="key"
+                     class="flex-1 flex items-center justify-center gap-1.5 cursor-pointer px-3 py-2 rounded-md border text-sm transition-colors select-none"
+                     :class="lang === key
+                       ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
+                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'">
+                <input type="radio" :value="key" v-model="lang" class="sr-only"/>
+                {{ l.label }}
+              </label>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">
+              {{ mode === 'realtime' ? 'リアルタイムは音声トークン課金のため影響なし' : '文字⇄音声の換算に使用' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-5 border-t border-gray-100 pt-5">
+          <p class="text-sm font-medium text-gray-700 mb-3">表示するプロバイダー</p>
+          <div class="flex flex-wrap gap-3">
+            <label v-for="company in companiesInMode" :key="company"
+                   class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border transition-colors select-none"
+                   :class="selectedCompanies.includes(company)
+                     ? 'border-blue-400 bg-blue-50 text-blue-900'
+                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'">
+              <input type="checkbox" :value="company" v-model="selectedCompanies"
+                     class="text-blue-600 focus:ring-blue-500"/>
+              <span class="text-sm">{{ company }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3 text-sm text-gray-600">
+          <span v-if="exchangeRateLoading" class="flex items-center gap-1.5">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-xs"></i>
+            為替レート取得中…
+          </span>
+          <span v-else>
+            為替レート: <strong>$1 = ¥{{ exchangeRate }}</strong>
+            <span v-if="exchangeRateDate" class="text-gray-400 ml-1">（{{ exchangeRateDate }} 取得）</span>
+            <span v-else class="text-gray-400 ml-1">（フォールバック値）</span>
+          </span>
+        </div>
+
+        <button type="submit"
+                class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md
+                       hover:bg-blue-700 focus:outline-none focus:ring-2
+                       focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+          計算する
+        </button>
+      </form>
+
+      <!-- 結果テーブル -->
+      <div v-if="calculated">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th @click="sortBy('company')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
+                  </th>
+                  <th @click="sortBy('name')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    モデル <span class="text-gray-400 ml-0.5">{{ sortIcon('name') }}</span>
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      title="公式が掲載している課金単位">
+                    公式の課金単位
+                  </th>
+                  <th @click="sortBy('perMin')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="音声1分あたりに換算した単価">
+                    $/音声1分 <span class="text-gray-400 ml-0.5">{{ sortIcon('perMin') }}</span>
+                  </th>
+                  <th @click="sortBy('costUSD')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    合計費用 <span class="text-gray-400 ml-0.5">{{ sortIcon('costUSD') }}</span>
+                  </th>
+                  <th @click="sortBy('ratio')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
+                    最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-if="sortedModels.length === 0">
+                  <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">
+                    表示するプロバイダーを選択してください
+                  </td>
+                </tr>
+                <tr v-for="m in sortedModels" :key="m.company + '/' + m.name"
+                    :class="m.ratio === 1 ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    <a :href="providerUrls[m.company]" target="_blank" rel="noopener noreferrer"
+                       class="hover:text-blue-600 hover:underline">{{ m.company }}</a>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ m.name }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{{ m.unitLabel }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ fmt(m.perMin) }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(m.costUSD) }}
+                    <span class="text-gray-500">(¥{{ fmt(m.costJPY) }})</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                    <span v-if="m.ratio === 1"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">
+                      最安
+                    </span>
+                    <span v-else :class="m.ratio < 5 ? 'text-gray-700' : m.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
+                      ×{{ m.ratio < 10 ? m.ratio.toFixed(1) : Math.round(m.ratio).toLocaleString() }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <details class="mt-6 rounded-lg border border-gray-200 bg-white group">
+          <summary
+            class="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-gray-900
+                   marker:content-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+            <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform group-open:rotate-90"></i>
+            前提条件・免責（換算の根拠を含む）
+          </summary>
+          <div class="border-t border-gray-200 px-4 py-4 text-sm text-gray-700 leading-relaxed">
+            <ul class="list-disc pl-5 space-y-2">
+              <li><strong>換算に使っている仮定</strong>:
+                音声1分 = <strong>2,400 音声トークン</strong>、
+                音声1分 = <strong>{{ charsPerMin.toLocaleString() }} 文字</strong>（{{ langs[lang].label }}）、
+                テキスト <strong>{{ langs[lang].charsPerToken }} 文字 = 1 トークン</strong>。
+                音声トークン数は OpenAI 公式が transcribe 系に併記している「$/分」目安と $/1Mトークン 単価から逆算した値です
+                （$0.006/分 ÷ $2.50/1M ≒ 2,400 トークン/分）。コーデックやプロバイダーで前後します。
+              </li>
+              <li><strong>$/音声1分 は比較のための換算値</strong>です。公式が定額/分で出しているものはその値をそのまま使い、
+                文字課金・トークン課金のものは上記の仮定で割り戻しています。実費はプロンプトや発話内容で変動します。</li>
+              <li><strong>言語で有利不利が逆転します</strong>: 文字課金のモデル（OpenAI tts-1、ElevenLabs、Deepgram Aura）は
+                1分あたりの文字数が少ない日本語で<strong>安くなり</strong>、音声トークン課金のモデル（Gemini TTS、OpenAI Realtime）は
+                言語によらず一定です。</li>
+              <li><strong>リアルタイムは入出力比が効きます</strong>: 出力（AIの発話）の単価は入力の2倍が一般的なので、
+                AIがよく喋る設計ほど高くなります。既定は 50:50 です。</li>
+              <li><strong>期間限定・プロモ</strong>: Gemini 3.8 Flash TTS / Flash-Lite TTS は 2026-12-31 までの価格で、
+                2027-01-01 に<strong>倍増</strong>します（$9→$18、$6→$12 / 1M音声出力トークン）。
+                Deepgram の Nova-3 ストリーミングも期間限定価格です。</li>
+              <li><strong>一次提供元の公式価格のみ</strong>掲載しています。AssemblyAI など公式ページで裏取りできなかった
+                プロバイダーは、数値が出典間で食い違うため未収録です。</li>
+              <li><strong>ElevenLabs のサブスク枠は未考慮</strong>: 本表は API の従量課金単価です。
+                月額プランに含まれるクレジット内で収まる場合は実費が下がります。</li>
+              <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      // 音声1分あたりの音声トークン数。
+      // OpenAI 公式が transcribe 系に併記する $/分 目安から逆算（$0.006/min ÷ $2.50/1M ≒ 2,400）。
+      const AUDIO_TOK_PER_MIN = 2400;
+
+      createApp({
+        data() {
+          return {
+            mode: 'tts',
+            chars: 100000,
+            sttMinutes: 6000,
+            rtMinutes: 1000,
+            rtOutputRatio: 50,
+            lang: 'ja',
+            calculated: false,
+            results: [],
+            sortColumn: 'costUSD',
+            sortDirection: 'asc',
+            exchangeRate: 150,
+            exchangeRateDate: null,
+            exchangeRateLoading: true,
+            selectedCompanies: [],
+
+            modes: {
+              tts:      { label: '読み上げ (TTS)',       unit: '$/文字',       icon: 'fas fa-volume-up' },
+              stt:      { label: '文字起こし (STT)',     unit: '$/分',         icon: 'fas fa-file-alt' },
+              realtime: { label: 'リアルタイム会話',      unit: '$/音声トークン', icon: 'fas fa-comments' },
+            },
+
+            langs: {
+              ja: { label: '日本語', charsPerMin: 400,  charsPerToken: 1.1 },
+              en: { label: '英語',   charsPerMin: 1000, charsPerToken: 4.0 },
+            },
+
+            providerUrls: {
+              OpenAI:       'https://developers.openai.com/api/docs/pricing',
+              Google:       'https://ai.google.dev/gemini-api/docs/pricing',
+              ElevenLabs:   'https://elevenlabs.io/pricing/api',
+              Deepgram:     'https://deepgram.com/pricing',
+            },
+
+            // ▼各社公式の従量課金単価。
+            //   perMChar      : $/100万文字（文字課金）
+            //   perMin        : $/分（定額）
+            //   audioOutPerMTok / textInPerMTok / audioInPerMTok / textOutPerMTok : $/100万トークン
+            catalog: {
+              tts: {
+                OpenAI: {
+                  "tts-1":            { perMChar: 15.00 },
+                  "tts-1-hd":         { perMChar: 30.00 },
+                  "gpt-4o-mini-tts":  { textInPerMTok: 0.60, audioOutPerMTok: 12.00 },
+                },
+                Google: {
+                  // 3.8 系は 2026-12-31 までの価格。2027-01-01 に倍増（$9→$18 / $6→$12）
+                  "Gemini 3.8 Flash TTS (〜12/31)":      { textInPerMTok: 0.50, audioOutPerMTok: 9.00 },
+                  "Gemini 3.8 Flash-Lite TTS (〜12/31)": { textInPerMTok: 0.50, audioOutPerMTok: 6.00 },
+                  "Gemini 2.5 Flash Preview TTS":        { textInPerMTok: 0.50, audioOutPerMTok: 10.00 },
+                  "Gemini 2.5 Pro Preview TTS":          { textInPerMTok: 1.00, audioOutPerMTok: 20.00 },
+                },
+                ElevenLabs: {
+                  "Eleven v4":            { perMChar: 80.00 },
+                  "Eleven v4 Turbo":      { perMChar: 40.00 },
+                  "Eleven v3":            { perMChar: 80.00 },
+                  "Eleven v3 Conversational": { perMChar: 40.00 },
+                  "Eleven Flash / Turbo": { perMChar: 40.00 },
+                },
+                Deepgram: {
+                  "Aura-1": { perMChar: 15.00 },
+                  "Aura-2": { perMChar: 30.00 },
+                },
+              },
+
+              stt: {
+                OpenAI: {
+                  "gpt-4o-mini-transcribe": { perMin: 0.003 },
+                  "gpt-transcribe":         { perMin: 0.0045 },
+                  "whisper-1":              { perMin: 0.006 },
+                  "gpt-4o-transcribe":      { perMin: 0.006 },
+                  "gpt-live-transcribe":    { perMin: 0.017 },
+                  "gpt-realtime-whisper":   { perMin: 0.017 },
+                  "gpt-realtime-translate": { perMin: 0.034 },
+                },
+                Google: {
+                  "Gemini 3.5 Transcribe":      { audioInPerMTok: 2.00, textOutPerMTok: 12.00 },
+                  "Gemini 3.5 Transcribe Live": { audioInPerMTok: 3.50, textOutPerMTok: 21.00 },
+                },
+                ElevenLabs: {
+                  "Scribe v2":          { perMin: 0.22 / 60 },
+                  "Scribe v2 Medical":  { perMin: 0.22 / 60 },
+                  "Scribe v2 Realtime": { perMin: 0.39 / 60 },
+                },
+                Deepgram: {
+                  "Nova-3 Mono (pre-recorded)":   { perMin: 0.0043 },
+                  "Nova-3 Multi (pre-recorded)":  { perMin: 0.0052 },
+                  "Nova-3 Mono (streaming・promo)":  { perMin: 0.0048 },
+                  "Nova-3 Multi (streaming・promo)": { perMin: 0.0058 },
+                },
+              },
+
+              realtime: {
+                OpenAI: {
+                  "gpt-realtime-2.1":      { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
+                  "gpt-realtime-2.1-mini": { audioInPerMTok: 10.00, audioOutPerMTok: 20.00 },
+                  "gpt-audio-1.5":         { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
+                  "gpt-audio-mini":        { audioInPerMTok: 10.00, audioOutPerMTok: 20.00 },
+                  "gpt-live-1 (セッション定額)": { perMin: 0.05 },
+                },
+                Google: {
+                  "Gemini 3.8 Live":                  { audioInPerMTok: 3.00, audioOutPerMTok: 12.00 },
+                  "Gemini 2.5 Flash Native Audio":    { audioInPerMTok: 3.00, audioOutPerMTok: 12.00 },
+                  "Gemini 3.5 Live Translate":        { audioInPerMTok: 3.50, audioOutPerMTok: 21.00 },
+                },
+              },
+            },
+          };
+        },
+
+        async mounted() {
+          this.syncCompanies();
+          try {
+            const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY');
+            const data = await res.json();
+            this.exchangeRate = Math.round(data.rates.JPY * 10) / 10;
+            this.exchangeRateDate = data.date;
+          } catch (_) {
+            // フォールバック値 150 を維持
+          } finally {
+            this.exchangeRateLoading = false;
+          }
+        },
+
+        watch: {
+          mode() {
+            this.syncCompanies();
+            this.calculated = false;
+          },
+        },
+
+        computed: {
+          charsPerMin()    { return this.langs[this.lang].charsPerMin; },
+          charsPerToken()  { return this.langs[this.lang].charsPerToken; },
+          companiesInMode(){ return Object.keys(this.catalog[this.mode]); },
+
+          minCostUSD() {
+            let min = Infinity;
+            for (const m of this.results) {
+              if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
+            }
+            return min === Infinity ? 0 : min;
+          },
+
+          sortedModels() {
+            const min = this.minCostUSD;
+            const flat = this.results
+              .filter(m => this.selectedCompanies.includes(m.company))
+              .map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
+            const dir = this.sortDirection === 'asc' ? 1 : -1;
+            return flat.sort((a, b) => {
+              const av = a[this.sortColumn], bv = b[this.sortColumn];
+              if (typeof av === 'string') return dir * av.localeCompare(bv, 'ja');
+              return dir * (av - bv);
+            });
+          },
+        },
+
+        methods: {
+          syncCompanies() {
+            this.selectedCompanies = this.companiesInMode.slice();
+          },
+
+          sortBy(col) {
+            if (this.sortColumn === col) {
+              this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              this.sortColumn = col;
+              this.sortDirection = 'asc';
+            }
+          },
+
+          sortIcon(col) {
+            if (this.sortColumn !== col) return '↕';
+            return this.sortDirection === 'asc' ? '▲' : '▼';
+          },
+
+          fmt(n) {
+            if (!isFinite(n) || n === 0) return '0';
+            if (n % 1 === 0) return n.toLocaleString();
+            if (n < 0.0001) return n.toExponential(2);
+            if (n < 0.01)  return n.toFixed(5).replace(/\.?0+$/, '');
+            if (n < 1000)  return n.toFixed(3).replace(/\.?0+$/, '');
+            return Math.round(n).toLocaleString();
+          },
+
+          // 1分の音声あたりの単価に正規化する
+          perMinuteOf(spec) {
+            if (spec.perMin != null) return spec.perMin;
+
+            const cpm = this.charsPerMin;
+            const cpt = this.charsPerToken;
+
+            if (spec.perMChar != null) {
+              // $/100万文字 × 1分あたりの文字数
+              return spec.perMChar * cpm / 1e6;
+            }
+
+            let cost = 0;
+            // 読み上げ: テキスト入力 + 音声出力
+            if (spec.textInPerMTok != null)   cost += spec.textInPerMTok   * (cpm / cpt) / 1e6;
+            if (spec.audioOutPerMTok != null && spec.audioInPerMTok == null) {
+              cost += spec.audioOutPerMTok * AUDIO_TOK_PER_MIN / 1e6;
+            }
+            // 文字起こし: 音声入力 + テキスト出力
+            if (spec.audioInPerMTok != null && spec.textOutPerMTok != null) {
+              cost += spec.audioInPerMTok * AUDIO_TOK_PER_MIN / 1e6;
+              cost += spec.textOutPerMTok * (cpm / cpt) / 1e6;
+            }
+            // リアルタイム: 音声入力 + 音声出力（入出力比で按分）
+            if (spec.audioInPerMTok != null && spec.audioOutPerMTok != null) {
+              const outShare = Math.min(100, Math.max(0, Number(this.rtOutputRatio) || 0)) / 100;
+              cost += spec.audioInPerMTok  * AUDIO_TOK_PER_MIN * (1 - outShare) / 1e6;
+              cost += spec.audioOutPerMTok * AUDIO_TOK_PER_MIN * outShare / 1e6;
+            }
+            return cost;
+          },
+
+          unitLabelOf(spec) {
+            if (spec.perMin != null)   return '$/分（定額）';
+            if (spec.perMChar != null) return '$/100万文字';
+            return '$/100万トークン';
+          },
+
+          // 課金対象の「分数」をモードごとに求める
+          billableMinutes() {
+            if (this.mode === 'tts')      return (Number(this.chars) || 0) / this.charsPerMin;
+            if (this.mode === 'stt')      return Number(this.sttMinutes) || 0;
+            return Number(this.rtMinutes) || 0;
+          },
+
+          calculate() {
+            const minutes = this.billableMinutes();
+            const out = [];
+            const tree = this.catalog[this.mode];
+            for (const company in tree) {
+              for (const name in tree[company]) {
+                const spec = tree[company][name];
+                const perMin = this.perMinuteOf(spec);
+                const costUSD = perMin * minutes;
+                out.push({
+                  company, name,
+                  unitLabel: this.unitLabelOf(spec),
+                  perMin,
+                  costUSD,
+                  costJPY: costUSD * this.exchangeRate,
+                });
+              }
+            }
+            this.results = out;
+            this.calculated = true;
+          },
+        },
+      }).mount('#app');
+    </script>
+  </body>
+</html>
