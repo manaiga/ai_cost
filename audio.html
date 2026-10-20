@@ -228,6 +228,8 @@
           各タスクの中で、課金方式ごとに最も安いモデルを1つずつ選んで並べています。
           「同じことを同じ秒数やったとき、課金方式の違いでいくら変わるか」を見るためのタブです。
           言語を切り替えると、文字課金の行だけが動きます。
+          <strong>廃止予定（EOL あり）のモデルは代表から除外</strong>しているため、
+          各タブの表で最安に見えるモデルとは一致しない場合があります（例: 読み上げの最安 tts-1 は 2027-01-06 に廃止）。
         </p>
       </div>
 
@@ -263,11 +265,16 @@
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
                   </th>
+                  <th @click="sortBy('eol')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="提供終了（予定）日 / End of Life">
+                    EOL <span class="text-gray-400 ml-0.5">{{ sortIcon('eol') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
-                  <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
                     表示するプロバイダーを選択してください
                   </td>
                 </tr>
@@ -292,6 +299,14 @@
                     <span v-else :class="m.ratio < 5 ? 'text-gray-700' : m.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
                       ×{{ m.ratio < 10 ? m.ratio.toFixed(1) : Math.round(m.ratio).toLocaleString() }}
                     </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    <span v-if="m.eol" class="text-amber-600"
+                          :title="m.successor ? '後継: ' + m.successor : '提供終了（予定）日'">
+                      {{ m.eol }}
+                      <span v-if="m.successor" class="block text-xs text-gray-400">→ {{ m.successor }}</span>
+                    </span>
+                    <span v-else class="text-gray-300">不明</span>
                   </td>
                 </tr>
               </tbody>
@@ -329,6 +344,17 @@
                 Deepgram の Nova-3 ストリーミングも期間限定価格です。</li>
               <li><strong>一次提供元の公式価格のみ</strong>掲載しています。AssemblyAI など公式ページで裏取りできなかった
                 プロバイダーは、数値が出典間で食い違うため未収録です。</li>
+              <li><strong>EOL（提供終了）</strong>: OpenAI の音声系は廃止が進んでいます。
+                <strong>tts-1 / tts-1-hd / gpt-4o-mini-tts は 2027-01-06</strong>、
+                <strong>whisper-1 / gpt-4o-transcribe / gpt-4o-mini-transcribe は 2027-02-26</strong>、
+                <strong>gpt-audio-mini は 2027-01-20</strong> に API から削除されます。</li>
+              <li><strong>移行先で課金方式が変わる点に注意</strong>:
+                OpenAI が tts-1 の後継に挙げているのは <code class="text-xs bg-gray-100 px-1 rounded">gpt-realtime-2.1-mini</code> で、
+                これは <code class="text-xs bg-gray-100 px-1 rounded">/v1/audio/speech</code> ではなく Realtime API のモデルです。
+                つまり<strong>文字課金から音声トークン課金に変わります</strong>。
+                本ページの分析どおり音声トークン課金は日本語で割高になるため、
+                <strong>日本語用途では単純な置き換えで費用が跳ねます</strong>（読み上げタブで両方を比較してください）。
+                API の形も変わるためドロップイン置換にはなりません。</li>
               <li><strong>ElevenLabs のサブスク枠は未考慮</strong>: 本表は API の従量課金単価です。
                 月額プランに含まれるクレジット内で収まる場合は実費が下がります。</li>
               <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
@@ -390,9 +416,9 @@
             catalog: {
               tts: {
                 OpenAI: {
-                  "tts-1":            { perMChar: 15.00 },
-                  "tts-1-hd":         { perMChar: 30.00 },
-                  "gpt-4o-mini-tts":  { textInPerMTok: 0.60, audioOutPerMTok: 12.00 },
+                  "tts-1":            { perMChar: 15.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini" },
+                  "tts-1-hd":         { perMChar: 30.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini" },
+                  "gpt-4o-mini-tts":  { textInPerMTok: 0.60, audioOutPerMTok: 12.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini" },
                 },
                 Google: {
                   // 3.8 系は 2026-12-31 までの価格。2027-01-01 に倍増（$9→$18 / $6→$12）
@@ -416,10 +442,10 @@
 
               stt: {
                 OpenAI: {
-                  "gpt-4o-mini-transcribe": { perMin: 0.003 },
+                  "gpt-4o-mini-transcribe": { perMin: 0.003,  eol: "2027-02-26", successor: "gpt-transcribe" },
                   "gpt-transcribe":         { perMin: 0.0045 },
-                  "whisper-1":              { perMin: 0.006 },
-                  "gpt-4o-transcribe":      { perMin: 0.006 },
+                  "whisper-1":              { perMin: 0.006,  eol: "2027-02-26", successor: "gpt-transcribe" },
+                  "gpt-4o-transcribe":      { perMin: 0.006,  eol: "2027-02-26", successor: "gpt-transcribe" },
                   "gpt-live-transcribe":    { perMin: 0.017 },
                   "gpt-realtime-whisper":   { perMin: 0.017 },
                   "gpt-realtime-translate": { perMin: 0.034 },
@@ -446,7 +472,7 @@
                   "gpt-realtime-2.1":      { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
                   "gpt-realtime-2.1-mini": { audioInPerMTok: 10.00, audioOutPerMTok: 20.00 },
                   "gpt-audio-1.5":         { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
-                  "gpt-audio-mini":        { audioInPerMTok: 10.00, audioOutPerMTok: 20.00 },
+                  "gpt-audio-mini":        { audioInPerMTok: 10.00, audioOutPerMTok: 20.00, eol: "2027-01-20", successor: "gpt-audio-1.5" },
                   "gpt-live-1 (セッション定額)": { perMin: 0.05 },
                 },
                 Google: {
@@ -598,8 +624,15 @@
                   const spec = tree[company][name];
                   const kind = this.billingKindOf(spec);
                   const perMin = this.perMinuteOf(spec, company);
-                  if (!best[kind] || perMin < best[kind].perMin) {
-                    best[kind] = { kind, company, name, perMin, cost: perMin * minutes };
+                  const alive = !spec.eol;
+                  const cur = best[kind];
+                  // 廃止予定でないモデルを優先する（将来の計画に使う表なので）。
+                  // 同じ生存状態どうしなら安い方を採る。
+                  const better = !cur
+                    || (alive && !cur.alive)
+                    || (alive === cur.alive && perMin < cur.perMin);
+                  if (better) {
+                    best[kind] = { kind, company, name, perMin, alive, cost: perMin * minutes };
                   }
                 }
               }
@@ -644,6 +677,8 @@
                 out.push({
                   company, name,
                   unitLabel: this.unitLabelOf(spec),
+                  eol: spec.eol || null,
+                  successor: spec.successor || null,
                   perMin,
                   costUSD,
                   costJPY: costUSD * this.exchangeRate,
