@@ -61,15 +61,19 @@
             <strong>読み上げ / 文字起こし / リアルタイム会話</strong>の3タブに分け、
             <strong>各タブ内で単位を統一</strong>しています。タブをまたいだ比較は想定していません
             （TTSモデルとSTTモデルを比べる人はいないため）。
+            そのうえで <strong>「課金方式くらべ」タブ</strong>で、同じ秒数を同じタスクで処理したときに
+            課金方式ごとにいくらになるかを並べています。
           </p>
           <p class="font-medium">
             <i class="fas fa-exclamation-triangle mr-1"></i>
-            日本語で使うなら「言語」の設定が結果を大きく変えます。
+            日本語だと、トークン課金のモデルが不利になります。
           </p>
           <p>
-            文字課金のモデルは「1分の音声に必要な文字数」が少ない<strong>日本語で有利</strong>になり、
-            音声トークン課金のモデルは言語に関係なく一定です。つまり<strong>言語によって有利不利が逆転します</strong>。
-            日本語（約400字/分）と英語（約1,000字/分）で切り替えて確認してください。
+            同じ原稿でも<strong>日本語は音声が長くなる</strong>（1分に約400字しか入らない）ため、
+            音声の長さで課金されるトークン課金は<strong>日本語で割高</strong>になります。
+            文字課金は文字数そのままなので言語の影響を受けません。
+            読み上げタブで実際に <strong>日本語ではトークン課金が文字課金の約2.4倍</strong>になり、
+            <strong>英語ではほぼ互角</strong>（差は下記の換算仮定の誤差に埋もれる程度）まで縮みます。
           </p>
         </div>
       </details>
@@ -90,33 +94,31 @@
       <form @submit.prevent="calculate" class="bg-white rounded-lg shadow-md p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-          <div v-if="mode === 'tts'">
-            <label for="chars" class="block text-sm font-medium text-gray-700 mb-2">読み上げる文字数</label>
-            <input type="number" id="chars" v-model.number="chars" min="0"
+          <div>
+            <label for="seconds" class="block text-sm font-medium text-gray-700 mb-2">
+              発話の長さ（秒）
+            </label>
+            <input type="number" id="seconds" v-model.number="seconds" min="0"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md
-                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 100000"/>
+                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 20"/>
             <p class="mt-1 text-xs text-gray-500">
-              ≒ {{ fmt(chars / charsPerMin) }} 分の音声（{{ lang === 'ja' ? '日本語 400字/分' : '英語 1,000字/分' }}）
+              ≒ {{ fmt(minutes) }} 分
+              <span v-if="mode === 'tts' || mode === 'compare'">
+                / 読み上げなら約 {{ fmt(Math.round(minutes * charsPerMin)) }} 文字（{{ langs[lang].label }}）
+              </span>
             </p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <button v-for="s in [20, 60, 600, 3600]" :key="s" type="button" @click="seconds = s"
+                      class="px-2 py-0.5 rounded border text-xs transition-colors"
+                      :class="seconds === s
+                        ? 'border-blue-400 bg-blue-50 text-blue-900'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'">
+                {{ s < 60 ? s + '秒' : (s / 60) + '分' }}
+              </button>
+            </div>
           </div>
 
-          <div v-if="mode === 'stt'">
-            <label for="sttMin" class="block text-sm font-medium text-gray-700 mb-2">文字起こしする音声の長さ（分）</label>
-            <input type="number" id="sttMin" v-model.number="sttMinutes" min="0"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md
-                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 6000"/>
-            <p class="mt-1 text-xs text-gray-500">≒ {{ fmt(sttMinutes / 60) }} 時間</p>
-          </div>
-
-          <div v-if="mode === 'realtime'">
-            <label for="rtMin" class="block text-sm font-medium text-gray-700 mb-2">会話の長さ（分）</label>
-            <input type="number" id="rtMin" v-model.number="rtMinutes" min="0"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md
-                          focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 1000"/>
-            <p class="mt-1 text-xs text-gray-500">ユーザーとAIの発話を合計した通話時間</p>
-          </div>
-
-          <div v-if="mode === 'realtime'">
+          <div v-if="mode === 'realtime' || mode === 'compare'">
             <label for="rtRatio" class="block text-sm font-medium text-gray-700 mb-2">
               AIの発話が占める割合（%）
             </label>
@@ -124,7 +126,7 @@
                    class="w-full px-3 py-2 border border-gray-300 rounded-md
                           focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例: 50"/>
             <p class="mt-1 text-xs text-gray-500">
-              出力(AI) {{ rtOutputRatio }}% / 入力(ユーザー) {{ 100 - rtOutputRatio }}%。出力の方が単価が高い
+              リアルタイムのみ使用。出力(AI) {{ rtOutputRatio }}% / 入力(ユーザー) {{ 100 - rtOutputRatio }}%
             </p>
           </div>
 
@@ -140,13 +142,11 @@
                 {{ l.label }}
               </label>
             </div>
-            <p class="mt-1 text-xs text-gray-500">
-              {{ mode === 'realtime' ? 'リアルタイムは音声トークン課金のため影響なし' : '文字⇄音声の換算に使用' }}
-            </p>
+            <p class="mt-1 text-xs text-gray-500">文字⇄音声の換算に使用（トークン課金は影響なし）</p>
           </div>
         </div>
 
-        <div class="mt-5 border-t border-gray-100 pt-5">
+        <div v-if="mode !== 'compare'" class="mt-5 border-t border-gray-100 pt-5">
           <p class="text-sm font-medium text-gray-700 mb-3">表示するプロバイダー</p>
           <div class="flex flex-wrap gap-3">
             <label v-for="company in companiesInMode" :key="company"
@@ -181,8 +181,58 @@
         </button>
       </form>
 
+      <!-- 課金方式くらべ -->
+      <div v-if="calculated && mode === 'compare'" class="space-y-5">
+        <div v-for="g in comparison" :key="g.task"
+             class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-baseline gap-2">
+            <h2 class="text-sm font-semibold text-gray-900">
+              <i :class="modes[g.task].icon" class="mr-1.5 text-gray-400"></i>{{ modes[g.task].label }}
+            </h2>
+            <span v-if="g.verdict" class="text-xs text-blue-700">{{ g.verdict }}</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-white border-b border-gray-100">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">課金方式</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">その方式での最安モデル</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ seconds }}秒</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">音声1分</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最安比</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="r in g.rows" :key="r.kind"
+                    :class="r.ratio === 1 ? 'bg-green-50' : ''">
+                  <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ r.kind }}</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ r.name }} <span class="text-gray-400 text-xs">({{ r.company }})</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    ${{ fmt(r.cost) }}
+                    <span class="text-gray-500">(¥{{ fmt(r.cost * exchangeRate) }})</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${{ fmt(r.perMin) }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                    <span v-if="r.ratio === 1"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">最安</span>
+                    <span v-else class="text-amber-600">×{{ r.ratio.toFixed(2) }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 px-1">
+          各タスクの中で、課金方式ごとに最も安いモデルを1つずつ選んで並べています。
+          「同じことを同じ秒数やったとき、課金方式の違いでいくら変わるか」を見るためのタブです。
+          言語を切り替えると、文字課金の行だけが動きます。
+        </p>
+      </div>
+
       <!-- 結果テーブル -->
-      <div v-if="calculated">
+      <div v-if="calculated && mode !== 'compare'">
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -297,13 +347,12 @@
         data() {
           return {
             mode: 'tts',
-            chars: 100000,
-            sttMinutes: 6000,
-            rtMinutes: 1000,
+            seconds: 20,
             rtOutputRatio: 50,
             lang: 'ja',
             calculated: false,
             results: [],
+            comparison: [],
             sortColumn: 'costUSD',
             sortDirection: 'asc',
             exchangeRate: 150,
@@ -315,6 +364,7 @@
               tts:      { label: '読み上げ (TTS)',       unit: '$/文字',       icon: 'fas fa-volume-up' },
               stt:      { label: '文字起こし (STT)',     unit: '$/分',         icon: 'fas fa-file-alt' },
               realtime: { label: 'リアルタイム会話',      unit: '$/音声トークン', icon: 'fas fa-comments' },
+              compare:  { label: '課金方式くらべ',        unit: '',             icon: 'fas fa-balance-scale' },
             },
 
             langs: {
@@ -429,7 +479,11 @@
         computed: {
           charsPerMin()    { return this.langs[this.lang].charsPerMin; },
           charsPerToken()  { return this.langs[this.lang].charsPerToken; },
-          companiesInMode(){ return Object.keys(this.catalog[this.mode]); },
+          minutes()        { return (Number(this.seconds) || 0) / 60; },
+          companiesInMode(){
+            if (this.mode === 'compare') return [];
+            return Object.keys(this.catalog[this.mode]);
+          },
 
           minCostUSD() {
             let min = Infinity;
@@ -519,15 +573,62 @@
             return '$/100万トークン';
           },
 
-          // 課金対象の「分数」をモードごとに求める
-          billableMinutes() {
-            if (this.mode === 'tts')      return (Number(this.chars) || 0) / this.charsPerMin;
-            if (this.mode === 'stt')      return Number(this.sttMinutes) || 0;
-            return Number(this.rtMinutes) || 0;
+          // 課金方式の分類。「課金方式くらべ」のグルーピングに使う
+          billingKindOf(spec) {
+            if (spec.perMin != null)   return '分課金';
+            if (spec.perMChar != null) return '文字課金';
+            return 'トークン課金';
+          },
+
+          // 各タスクについて、課金方式ごとの最安モデルを1つずつ選んで並べる
+          buildComparison() {
+            const minutes = this.minutes;
+            const groups = [];
+
+            for (const task of ['tts', 'stt', 'realtime']) {
+              const best = {};
+              const tree = this.catalog[task];
+              for (const company in tree) {
+                for (const name in tree[company]) {
+                  const spec = tree[company][name];
+                  const kind = this.billingKindOf(spec);
+                  const perMin = this.perMinuteOf(spec);
+                  if (!best[kind] || perMin < best[kind].perMin) {
+                    best[kind] = { kind, company, name, perMin, cost: perMin * minutes };
+                  }
+                }
+              }
+
+              const rows = ['分課金', '文字課金', 'トークン課金']
+                .filter(k => best[k])
+                .map(k => best[k]);
+              if (rows.length === 0) continue;
+
+              const min = Math.min(...rows.map(r => r.perMin));
+              rows.forEach(r => { r.ratio = min > 0 ? r.perMin / min : 1; });
+              rows.sort((a, b) => a.perMin - b.perMin);
+
+              // 方式間の開きが意味のある大きさなら一言添える
+              let verdict = '';
+              if (rows.length > 1) {
+                const top = rows[0], bottom = rows[rows.length - 1];
+                const r = bottom.perMin / top.perMin;
+                verdict = r < 1.1
+                  ? `${top.kind} と ${bottom.kind} はほぼ互角（差 ${((r - 1) * 100).toFixed(0)}%・換算誤差の範囲）`
+                  : `${top.kind} が ${bottom.kind} の ${r.toFixed(1)}倍 安い`;
+              }
+              groups.push({ task, rows, verdict });
+            }
+            return groups;
           },
 
           calculate() {
-            const minutes = this.billableMinutes();
+            if (this.mode === 'compare') {
+              this.comparison = this.buildComparison();
+              this.calculated = true;
+              return;
+            }
+            const minutes = this.minutes;
             const out = [];
             const tree = this.catalog[this.mode];
             for (const company in tree) {
