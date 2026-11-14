@@ -244,16 +244,15 @@
             </button>
           </div>
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <template v-if="checkedKeys.length">
-              <span class="text-gray-700"><i class="fas fa-check-square text-blue-500 mr-1"></i>{{ checkedKeys.length }} 件をチェック中 — その中の最安を ×1 として比較</span>
-              <button type="button" @click="checkedOnly = !checkedOnly"
-                      class="px-2 py-0.5 rounded border transition-colors"
-                      :class="checkedOnly ? 'border-blue-400 bg-blue-50 text-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
-                チェックしたものだけ表示
-              </button>
-              <button type="button" @click="clearChecks" class="text-gray-400 hover:text-gray-600 underline">チェックを外す</button>
+            <template v-if="baseRow">
+              <span class="text-gray-700"><i class="fas fa-dot-circle text-green-600 mr-1"></i>基準: <strong>{{ baseRow.name }}</strong>（{{ baseRow.company }}）を ×1 として比較</span>
+              <button type="button" @click="baseKey = null" class="text-gray-400 hover:text-gray-600 underline">基準を外す</button>
             </template>
-            <span v-else class="text-gray-400">行の左のチェックで比べたいモデルを選ぶと、その中の最安を ×1 として比較します（未選択なら表示中の最安が基準）。</span>
+            <template v-else-if="baseKey">
+              <span class="text-amber-600"><i class="fas fa-exclamation-triangle mr-1"></i>基準に選んだモデルが絞り込みで隠れているため、表示中の最安を ×1 にしています</span>
+              <button type="button" @click="baseKey = null" class="text-gray-400 hover:text-gray-600 underline">基準を外す</button>
+            </template>
+            <span v-else class="text-gray-400">行の左の ○ で基準にするモデルを選ぶと、それを ×1 として他と比べます（未選択なら表示中の最安が ×1）。</span>
           </div>
           <p class="text-xs text-gray-400">会社を選ぶとそれだけに絞り込みます（複数可）。「すべて」で解除。</p>
         </div>
@@ -263,7 +262,7 @@
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="pl-4 pr-1 py-3 w-8" title="比較したいモデルにチェック"><i class="fas fa-check-square text-gray-300"></i></th>
+                  <th class="pl-4 pr-1 py-3 w-8 text-left text-xs font-medium text-gray-500 whitespace-nowrap" title="比較の基準（×1）にするモデルを1つ選ぶ">基準</th>
                   <th @click="sortBy('company')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
@@ -287,7 +286,7 @@
                   </th>
                   <th @click="sortBy('ratio')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
-                    title="チェックした中の最安（未チェックなら表示中の最安）を ×1 とした倍率">
+                    title="基準に選んだモデル（未選択なら表示中の最安）を ×1 とした倍率">
                     比較 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
                   </th>
                   <th @click="sortBy('released')"
@@ -309,11 +308,11 @@
                   </td>
                 </tr>
                 <tr v-for="m in sortedModels" :key="m.company + '/' + m.name"
-                    :class="m.isBase ? 'bg-green-50 hover:bg-green-100' : m.checked ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-gray-50'">
+                    :class="m.isBase ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
                   <td class="pl-4 pr-1 py-3">
-                    <input type="checkbox" :checked="m.checked" @change="toggleCheck(m.company + '/' + m.name)"
-                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                           :aria-label="m.name + ' を比較に入れる'"/>
+                    <input type="radio" name="baseModel" :checked="m.picked" @click="toggleBase(m.company + '/' + m.name)"
+                           class="border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                           :aria-label="m.name + ' を比較の基準にする'"/>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="providerUrls[m.company]" target="_blank" rel="noopener noreferrer"
@@ -431,8 +430,7 @@
             exchangeRateDate: null,
             exchangeRateLoading: true,
             pickedCompanies: [],   // 空 = すべて表示
-            checkedKeys: [],       // 比較用にチェックした行（"会社/モデル名"）
-            checkedOnly: false,
+            baseKey: null,         // 比較の基準（×1）に選んだ行（"会社/モデル名"）。null = 表示中の最安
 
             modes: {
               tts:      { label: '読み上げ (TTS)',       unit: '$/文字',       icon: 'fas fa-volume-up' },
@@ -580,28 +578,29 @@
             return c;
           },
 
-          // 比較の基準: チェックした行があればその中の最安、無ければ表示中の最安
+          // 比較の基準に選んだ行（絞り込みで隠れていれば null）
+          baseRow() {
+            if (!this.baseKey) return null;
+            return this.visibleRows.find(m => m.company + '/' + m.name === this.baseKey) || null;
+          },
+
+          // 比較の基準額: 選んだ行があればそれ、無ければ表示中の最安
           baseCostUSD() {
-            const pool = this.checkedKeys.length
-              ? this.visibleRows.filter(m => this.checkedKeys.includes(m.company + '/' + m.name))
-              : this.visibleRows;
-            let min = Infinity;
-            for (const m of pool) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
-            return min === Infinity ? this.minCostUSD : min;
+            const r = this.baseRow;
+            return r && r.costUSD > 0 ? r.costUSD : this.minCostUSD;
           },
 
           sortedModels() {
             const base = this.baseCostUSD;
-            const anyChecked = this.checkedKeys.length > 0;
-            let rows = this.visibleRows.map(m => {
-              const checked = this.checkedKeys.includes(m.company + '/' + m.name);
+            const chosen = this.baseRow && this.baseRow.costUSD > 0;
+            const rows = this.visibleRows.map(m => {
+              const picked = m.company + '/' + m.name === this.baseKey;
               return {
-                ...m, checked,
+                ...m, picked,
                 ratio: base > 0 ? m.costUSD / base : 1,
-                isBase: (!anyChecked || checked) && m.costUSD === base,
+                isBase: chosen ? picked : m.costUSD === base,
               };
             });
-            if (anyChecked && this.checkedOnly) rows = rows.filter(r => r.checked);
             const dir = this.sortDirection === 'asc' ? 1 : -1;
             return rows.sort((a, b) => {
               // 日付の列は「不明」を常に末尾に置く
@@ -621,22 +620,17 @@
         },
 
         methods: {
-          // タブを切り替えたら絞り込みとチェックを解除する（会社・モデルの顔ぶれがタブごとに違うため）
+          // タブを切り替えたら絞り込みと比較の基準を解除する（会社・モデルの顔ぶれがタブごとに違うため）
           syncCompanies() {
             this.pickedCompanies = [];
-            this.clearChecks();
+            this.baseKey = null;
           },
 
-          toggleCheck(key) {
-            const i = this.checkedKeys.indexOf(key);
-            if (i >= 0) this.checkedKeys.splice(i, 1);
-            else this.checkedKeys.push(key);
+          // 同じ行をもう一度押すと基準を外す（表示中の最安に戻る）
+          toggleBase(key) {
+            this.baseKey = this.baseKey === key ? null : key;
           },
 
-          clearChecks() {
-            this.checkedKeys = [];
-            this.checkedOnly = false;
-          },
 
           togglePick(c) {
             const i = this.pickedCompanies.indexOf(c);
