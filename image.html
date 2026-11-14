@@ -63,6 +63,8 @@
               表の「基準解像度」は、その $/枚 が成立する条件です。これを無視した比較は意味を持ちません。</li>
             <li><strong>品質設定でも大きく動きます</strong>。例えば GPT Image 2.5 は 1024² でも
               medium $0.013 → high $0.053 → max $0.211 と <strong>16倍</strong>の開きがあるため、段階ごとに別行にしています。</li>
+            <li><strong>GPT Image 2.6（2026-11-04）は単価が公表前</strong>のため、トークン料金（2.5 と同じ $30/M）と実測の消費量から出した参考値です。
+              medium は 2.5 の約3倍（$0.044）、high は同額（$0.053）。<strong>Flare / Sunburst</strong> は速度と編集精度の違いで、料金は同じなので1行にまとめています。</li>
             <li><strong>編集・img2img は別料金のことがあります</strong>。xAI は入力画像1枚につき +$0.01、
               FLUX.2 は <strong>メガピクセル課金</strong>（1MP 目と追加 MP で単価が違う）で、本表は 1MP（≒1024²）の単価です。本表は<strong>テキストから新規生成</strong>の単価です。</li>
             <li><strong>Batch API を使えば概ね半額</strong>になります（Gemini は公式に Batch 価格を掲載）。本表は Standard 価格です。</li>
@@ -132,7 +134,37 @@
                     :class="pickedCompanies.includes(c) ? 'text-blue-500' : 'text-gray-400'">{{ countByCompany[c] || 0 }}</span>
             </button>
           </div>
-          <p class="text-xs text-gray-400">会社を選ぶとそれだけに絞り込みます（複数可）。「すべて」で解除。</p>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <button type="button" role="switch" :aria-checked="latestOnly" @click="latestOnly = !latestOnly"
+                    class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors"
+                    :class="latestOnly ? 'bg-blue-600' : 'bg-gray-300'">
+                <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform"
+                      :class="latestOnly ? 'translate-x-4' : 'translate-x-0.5'"></span>
+              </span>
+              各系列の最新だけ
+            </button>
+            <span v-if="latestOnly && hiddenByLatest.count" class="text-xs text-gray-400">
+              旧版 {{ hiddenByLatest.count }} 件を非表示
+            </span>
+            <span v-if="latestOnly && hiddenByLatest.cheaper" class="text-xs text-amber-600">
+              <i class="fas fa-exclamation-triangle mr-0.5"></i>
+              うち {{ hiddenByLatest.cheaper }} 件は表示中の最安より安い
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <template v-if="checkedKeys.length">
+              <span class="text-gray-700"><i class="fas fa-check-square text-blue-500 mr-1"></i>{{ checkedKeys.length }} 件をチェック中 — その中の最安を ×1 として比較</span>
+              <button type="button" @click="checkedOnly = !checkedOnly"
+                      class="px-2 py-0.5 rounded border transition-colors"
+                      :class="checkedOnly ? 'border-blue-400 bg-blue-50 text-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                チェックしたものだけ表示
+              </button>
+              <button type="button" @click="clearChecks" class="text-gray-400 hover:text-gray-600 underline">チェックを外す</button>
+            </template>
+            <span v-else class="text-gray-400">行の左のチェックで比べたいモデルを選ぶと、その中の最安を ×1 として比較します（未選択なら表示中の最安が基準）。</span>
+          </div>
+          <p class="text-xs text-gray-400">会社を選ぶとそれだけに絞り込みます（複数可）。「最新だけ」は同じ系列の旧版を隠します（GPT Image 2.5 → 2.6、Grok Imagine Image → 2.0 など。品質違いの行は残ります）。</p>
         </div>
 
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -140,6 +172,7 @@
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="pl-4 pr-1 py-3 w-8" title="比較したいモデルにチェック"><i class="fas fa-check-square text-gray-300"></i></th>
                   <th @click="sortBy('company')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
@@ -161,8 +194,14 @@
                     合計費用 <span class="text-gray-400 ml-0.5">{{ sortIcon('costUSD') }}</span>
                   </th>
                   <th @click="sortBy('ratio')"
-                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
-                    最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                    title="チェックした中の最安（未チェックなら表示中の最安）を ×1 とした倍率">
+                    比較 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                  </th>
+                  <th @click="sortBy('released')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="API で使えるようになった日（プレビュー含む）">
+                    公開日 <span class="text-gray-400 ml-0.5">{{ sortIcon('released') }}</span>
                   </th>
                   <th @click="sortBy('eol')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
@@ -173,12 +212,17 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
-                  <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-400">
                     該当するモデルがありません
                   </td>
                 </tr>
                 <tr v-for="model in sortedModels" :key="model.company + '/' + model.name"
-                    :class="model.ratio === 1 ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
+                    :class="model.isBase ? 'bg-green-50 hover:bg-green-100' : model.checked ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-gray-50'">
+                  <td class="pl-4 pr-1 py-3">
+                    <input type="checkbox" :checked="model.checked" @change="toggleCheck(model.company + '/' + model.name)"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                           :aria-label="model.name + ' を比較に入れる'"/>
+                  </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
                        class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
@@ -197,13 +241,20 @@
                     <span class="text-gray-500">(¥{{ fmt(model.costJPY) }})</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                    <span v-if="model.ratio === 1"
+                    <span v-if="model.isBase"
                           class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">
-                      最安
+                      基準 ×1
+                    </span>
+                    <span v-else-if="model.ratio < 1" class="text-green-700" title="基準より安い">
+                      ×{{ model.ratio.toFixed(2) }}
                     </span>
                     <span v-else :class="model.ratio < 5 ? 'text-gray-700' : model.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
                       ×{{ model.ratio < 10 ? model.ratio.toFixed(1) : Math.round(model.ratio).toLocaleString() }}
                     </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 tabular-nums">
+                    <span v-if="model.released">{{ model.released }}</span>
+                    <span v-else class="text-gray-300">不明</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm">
                     <span v-if="model.eol" class="text-amber-600" title="提供終了（予定）日">{{ model.eol }}</span>
@@ -254,18 +305,24 @@
             exchangeRateDate: null,
             exchangeRateLoading: true,
             pickedCompanies: [],   // 空 = すべて表示
+            latestOnly: false,     // 各系列の最新だけ（テキストのページと設定を共有）
+            checkedKeys: [],       // 比較用にチェックした行（"会社/モデル名"）
+            checkedOnly: false,
 
             // ▼各社公式の Standard 価格。テキストからの新規生成、$/枚。
             services: {
               OpenAI: {
                 site_url: "https://openai.com",
                 price_url: "https://platform.openai.com/docs/pricing",
-                // GPT Image 2.5 はトークン課金（$30/M 画像出力トークン）。
-                // 1024x1024 での代表的な消費量から $/枚 に換算した公表値。
+                // GPT Image 2.5 / 2.6 はトークン課金（$30/M 画像出力トークン）。
+                // 1024x1024 での代表的な消費量から $/枚 に換算した値（2.5 は公表値、2.6 は公表前のため実測の参考値）。
+                // Flare / Sunburst は同じ料金なので行を分けない（違うのは速度と編集精度だけ）。
                 models: {
-                  "GPT Image 2.5 (medium)": { perImage: 0.013, res: "1024×1024" },
-                  "GPT Image 2.5 (high)":   { perImage: 0.053, res: "1024×1024" },
-                  "GPT Image 2.5 (max)":    { perImage: 0.211, res: "1024×1024" },
+                  "GPT Image 2.6 (medium・参考値)": { perImage: 0.044, res: "1024×1024", released: "2026-11-04" },
+                  "GPT Image 2.6 (high・参考値)":   { perImage: 0.053, res: "1024×1024", released: "2026-11-04" },
+                  "GPT Image 2.5 (medium)": { perImage: 0.013, res: "1024×1024", released: "2026-09-08" },
+                  "GPT Image 2.5 (high)":   { perImage: 0.053, res: "1024×1024", released: "2026-09-08" },
+                  "GPT Image 2.5 (max)":    { perImage: 0.211, res: "1024×1024", released: "2026-09-08" },
                 },
               },
 
@@ -275,14 +332,14 @@
                 // Gemini 系はトークン課金（画像出力 $30〜$120/M）。公式が併記する $/枚 を採用。
                 // Imagen 4 は Vertex AI 側の料金で、Gemini API 価格表には非掲載（参考値）。
                 models: {
-                  "Gemini 3 Pro Image (Nano Banana Pro)":        { perImage: 0.134,  res: "1K–2K" },
-                  "Gemini 3.1 Flash Image (Nano Banana 2)":      { perImage: 0.067,  res: "1K" },
-                  "Gemini Nano Banana 2.1":                      { perImage: 0.0336, res: "1K" },
-                  "Gemini 3.1 Flash Lite Image (NB2 Lite)":      { perImage: 0.0336, res: "1K" },
-                  "Gemini 2.5 Flash Image":                      { perImage: 0.039,  res: "1K", eol: "2027-03-15" },
-                  "Imagen 4 Fast (Vertex・参考値)":               { perImage: 0.02,   res: "1024×1024" },
-                  "Imagen 4 Standard (Vertex・参考値)":           { perImage: 0.04,   res: "1024×1024" },
-                  "Imagen 4 Ultra (Vertex・参考値)":              { perImage: 0.06,   res: "1024×1024" },
+                  "Gemini 3 Pro Image (Nano Banana Pro)":        { perImage: 0.134,  res: "1K–2K", released: "2026-05-28" },
+                  "Gemini 3.1 Flash Image (Nano Banana 2)":      { perImage: 0.067,  res: "1K", released: "2026-05-28" },
+                  "Gemini Nano Banana 2.1":                      { perImage: 0.0336, res: "1K", released: "2026-10-06" },
+                  "Gemini 3.1 Flash Lite Image (NB2 Lite)":      { perImage: 0.0336, res: "1K", released: "2026-06-30" },
+                  "Gemini 2.5 Flash Image":                      { perImage: 0.039,  res: "1K", eol: "2027-03-15", released: "2025-10-02" },
+                  "Imagen 4 Fast (Vertex・参考値)":               { perImage: 0.02,   res: "1024×1024", released: "2025-06-24" },
+                  "Imagen 4 Standard (Vertex・参考値)":           { perImage: 0.04,   res: "1024×1024", released: "2025-06-24" },
+                  "Imagen 4 Ultra (Vertex・参考値)":              { perImage: 0.06,   res: "1024×1024", released: "2025-06-24" },
                 },
               },
 
@@ -291,8 +348,8 @@
                 price_url: "https://docs.x.ai/developers/pricing",
                 // 定額/枚。img2img は入力画像1枚につき +$0.01。
                 models: {
-                  "Grok Imagine Image":     { perImage: 0.02, res: "1K" },
-                  "Grok Imagine Image 2.0": { perImage: 0.04, res: "1K / 2K" },
+                  "Grok Imagine Image":     { perImage: 0.02, res: "1K", released: "2026-01" },
+                  "Grok Imagine Image 2.0": { perImage: 0.04, res: "1K / 2K", released: "2026-08" },
                 },
               },
 
@@ -301,13 +358,13 @@
                 price_url: "https://bfl.ai/pricing",
                 // FLUX 3 は $/枚（解像度別）、FLUX.2 は $/MP（1MP 目の単価を掲載）。FLUX.1 は前世代のため未収録。
                 models: {
-                  "FLUX 3 Image":        { perImage: 0.048, res: "1K" },
-                  "FLUX 3 Image Klein":  { perImage: 0.009, res: "1K" },
-                  "FLUX.2 [max]":        { perImage: 0.07,  res: "1MP" },
-                  "FLUX.2 [pro]":        { perImage: 0.03,  res: "1MP" },
-                  "FLUX.2 [flex]":       { perImage: 0.05,  res: "1MP" },
-                  "FLUX.2 [klein] 9B":   { perImage: 0.015, res: "1MP" },
-                  "FLUX.2 [klein] 4B":   { perImage: 0.014, res: "1MP" },
+                  "FLUX 3 Image":        { perImage: 0.048, res: "1K", released: "2026-07" },
+                  "FLUX 3 Image Klein":  { perImage: 0.009, res: "1K", released: "2026-07" },
+                  "FLUX.2 [max]":        { perImage: 0.07,  res: "1MP", released: "2025-11-25" },
+                  "FLUX.2 [pro]":        { perImage: 0.03,  res: "1MP", released: "2025-11-25" },
+                  "FLUX.2 [flex]":       { perImage: 0.05,  res: "1MP", released: "2025-11-25" },
+                  "FLUX.2 [klein] 9B":   { perImage: 0.015, res: "1MP", released: "2026-01", line: "flux image klein", ver: 2000 },
+                  "FLUX.2 [klein] 4B":   { perImage: 0.014, res: "1MP", released: "2026-01", line: "flux image klein", ver: 2000 },
                 },
               },
 
@@ -323,8 +380,8 @@
                 site_url: "https://ideogram.ai",
                 price_url: "https://about.ideogram.ai/api-pricing",
                 models: {
-                  "Ideogram 3.0 Standard": { perImage: 0.03, res: "1024×1024" },
-                  "Ideogram 3.0 Quality":  { perImage: 0.09, res: "1024×1024" },
+                  "Ideogram 3.0 Standard": { perImage: 0.03, res: "1024×1024", released: "2025-03-26" },
+                  "Ideogram 3.0 Quality":  { perImage: 0.09, res: "1024×1024", released: "2025-03-26" },
                 },
               },
 
@@ -333,8 +390,8 @@
                 price_url: "https://www.recraft.ai/docs",
                 // 2026-07-31 に値下げ。
                 models: {
-                  "Recraft V4.1":     { perImage: 0.035, res: "1024×1024" },
-                  "Recraft V4.1 Pro": { perImage: 0.21,  res: "1024×1024" },
+                  "Recraft V4.1":     { perImage: 0.035, res: "1024×1024", released: "2026-05" },
+                  "Recraft V4.1 Pro": { perImage: 0.21,  res: "1024×1024", released: "2026-05" },
                 },
               },
             },
@@ -342,6 +399,7 @@
         },
 
         async mounted() {
+          try { this.latestOnly = localStorage.getItem('ai_cost.latestOnly') === '1'; } catch (_) {}
           try {
             const res = await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=JPY');
             const data = await res.json();
@@ -354,18 +412,46 @@
           }
         },
 
+        watch: {
+          latestOnly(v) {
+            try { localStorage.setItem('ai_cost.latestOnly', v ? '1' : '0'); } catch (_) {}
+          },
+        },
+
         computed: {
-          // 会社フィルタを通った行（ソート前）
+          // 各系列の最新版だけを集めた Set（"会社/モデル名"）。同じ系列・同じ版が複数あれば全部残す
+          latestKeys() {
+            const best = {}, items = [];
+            for (const company in this.results) {
+              for (const m of this.results[company]) {
+                const { line, ver } = this.lineOf(m.name, m.line, m.ver);
+                const k = company + '|' + line;
+                items.push({ id: company + '/' + m.name, k, ver });
+                if (!(k in best) || ver > best[k]) best[k] = ver;
+              }
+            }
+            return new Set(items.filter(i => i.ver === best[i.k]).map(i => i.id));
+          },
+
+          isLatest() {
+            const keys = this.latestKeys;
+            return (company, m) => keys.has(company + '/' + m.name);
+          },
+
+          // 会社・最新フィルタを通った行（ソート前）
           visibleRows() {
             const out = [];
             for (const company in this.results) {
               if (this.pickedCompanies.length && !this.pickedCompanies.includes(company)) continue;
-              for (const m of this.results[company]) out.push({ ...m, company });
+              for (const m of this.results[company]) {
+                if (this.latestOnly && !this.isLatest(company, m)) continue;
+                out.push({ ...m, company });
+              }
             }
             return out;
           },
 
-          // 最安比は「いま表示している中」で計算する
+          // 表示中の最安（チェックが無いときの比較の基準）。「いま表示している中」で計算する
           minCostUSD() {
             let min = Infinity;
             for (const m of this.visibleRows) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
@@ -374,19 +460,61 @@
 
           countByCompany() {
             const c = {};
-            for (const company in this.results) c[company] = this.results[company].length;
+            for (const company in this.results) {
+              c[company] = this.results[company]
+                .filter(m => !this.latestOnly || this.isLatest(company, m)).length;
+            }
             return c;
           },
 
-          sortedModels() {
+          // 「最新だけ」で隠れている件数と、そのうち表示中の最安より安いものの数
+          // （GPT Image 2.5 medium は 2.6 medium の約 1/3 なので、隠したことを明示する）
+          hiddenByLatest() {
+            if (!this.latestOnly) return { count: 0, cheaper: 0 };
             const min = this.minCostUSD;
-            const flat = this.visibleRows.map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
+            let count = 0, cheaper = 0;
+            for (const company in this.results) {
+              if (this.pickedCompanies.length && !this.pickedCompanies.includes(company)) continue;
+              for (const m of this.results[company]) {
+                if (this.isLatest(company, m)) continue;
+                count++;
+                if (min > 0 && m.costUSD < min) cheaper++;
+              }
+            }
+            return { count, cheaper };
+          },
+
+          // 比較の基準: チェックした行があればその中の最安、無ければ表示中の最安
+          baseCostUSD() {
+            const pool = this.checkedKeys.length
+              ? this.visibleRows.filter(m => this.checkedKeys.includes(m.company + '/' + m.name))
+              : this.visibleRows;
+            let min = Infinity;
+            for (const m of pool) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
+            return min === Infinity ? this.minCostUSD : min;
+          },
+
+          sortedModels() {
+            const base = this.baseCostUSD;
+            const anyChecked = this.checkedKeys.length > 0;
+            let rows = this.visibleRows.map(m => {
+              const checked = this.checkedKeys.includes(m.company + '/' + m.name);
+              return {
+                ...m, checked,
+                ratio: base > 0 ? m.costUSD / base : 1,
+                isBase: (!anyChecked || checked) && m.costUSD === base,
+              };
+            });
+            if (anyChecked && this.checkedOnly) rows = rows.filter(r => r.checked);
             const dir = this.sortDirection === 'asc' ? 1 : -1;
-            return flat.sort((a, b) => {
-              if (this.sortColumn === 'eol') {
-                const ax = a.eol || '9999-99-99';
-                const bx = b.eol || '9999-99-99';
-                return dir * ax.localeCompare(bx);
+            return rows.sort((a, b) => {
+              // 日付の列は「不明」を常に末尾に置く
+              if (this.sortColumn === 'eol' || this.sortColumn === 'released') {
+                const av = a[this.sortColumn], bv = b[this.sortColumn];
+                if (!av && !bv) return 0;
+                if (!av) return 1;
+                if (!bv) return -1;
+                return dir * av.localeCompare(bv);
               }
               const av = a[this.sortColumn];
               const bv = b[this.sortColumn];
@@ -397,10 +525,40 @@
         },
 
         methods: {
+          toggleCheck(key) {
+            const i = this.checkedKeys.indexOf(key);
+            if (i >= 0) this.checkedKeys.splice(i, 1);
+            else this.checkedKeys.push(key);
+          },
+
+          clearChecks() {
+            this.checkedKeys = [];
+            this.checkedOnly = false;
+          },
+
           togglePick(c) {
             const i = this.pickedCompanies.indexOf(c);
             if (i >= 0) this.pickedCompanies.splice(i, 1);
             else this.pickedCompanies.push(c);
+          },
+
+          // モデル名から「系列」と「版」を取り出す。最新フラグをデータに持たせず、名前から自動で判定する。
+          //   gpt-6.1-sol → "gpt sol" / 6.1    claude-opus-5-5 → "claude opus" / 5.5
+          //   gpt-4o-mini → "gpt mini" / 4      Nova 2 Lite → "nova lite" / 2（版なしの Nova Lite は 0）
+          // 括弧書き（コンテキスト帯・プロモ表記など）と "preview" は系列判定から外す。
+          // 名前から正しく取れないモデルだけ、データに line / ver を書いて上書きする。
+          // 版は major*1000+minor で比べる（5.10 > 5.9 を正しく扱うため）。
+          lineOf(name, explicitLine, explicitVer) {
+            let base = name.replace(/\s*[（(][^)）]*[)）]/g, '').replace(/[-\s]preview\b/i, '').trim();
+            const m = base.match(/(?:^|[-\s])v?(\d+)(?:[.-](\d+))?o?(?=$|[-\s])/i);
+            let ver = 0;
+            if (m) {
+              ver = Number(m[1]) * 1000 + Number(m[2] || 0);
+              base = base.slice(0, m.index) + ' ' + base.slice(m.index + m[0].length);
+            }
+            if (explicitVer != null) ver = explicitVer;
+            const line = (explicitLine || base).replace(/[-\s]+/g, ' ').trim().toLowerCase();
+            return { line, ver };
           },
 
           sortBy(col) {
@@ -440,6 +598,9 @@
                   perImage: spec.perImage,
                   res: spec.res,
                   eol: spec.eol || null,
+                  released: spec.released || null,
+                  line: spec.line || null,
+                  ver: spec.ver ?? null,
                   costUSD: totalCostUSD,
                   costJPY: totalCostUSD * this.exchangeRate,
                 });

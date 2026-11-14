@@ -57,7 +57,7 @@
             <strong>$/100万音声トークン</strong>です。
           </p>
           <p>
-            これらを1つの表に並べて「最安比」を出しても意味がないため、
+            これらを1つの表に並べて倍率を比べても意味がないため、
             <strong>読み上げ / 文字起こし / リアルタイム会話</strong>の3タブに分け、
             <strong>各タブ内で単位を統一</strong>しています。タブをまたいだ比較は想定していません
             （TTSモデルとSTTモデルを比べる人はいないため）。
@@ -243,6 +243,18 @@
                     :class="pickedCompanies.includes(c) ? 'text-blue-500' : 'text-gray-400'">{{ countByCompany[c] || 0 }}</span>
             </button>
           </div>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <template v-if="checkedKeys.length">
+              <span class="text-gray-700"><i class="fas fa-check-square text-blue-500 mr-1"></i>{{ checkedKeys.length }} 件をチェック中 — その中の最安を ×1 として比較</span>
+              <button type="button" @click="checkedOnly = !checkedOnly"
+                      class="px-2 py-0.5 rounded border transition-colors"
+                      :class="checkedOnly ? 'border-blue-400 bg-blue-50 text-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                チェックしたものだけ表示
+              </button>
+              <button type="button" @click="clearChecks" class="text-gray-400 hover:text-gray-600 underline">チェックを外す</button>
+            </template>
+            <span v-else class="text-gray-400">行の左のチェックで比べたいモデルを選ぶと、その中の最安を ×1 として比較します（未選択なら表示中の最安が基準）。</span>
+          </div>
           <p class="text-xs text-gray-400">会社を選ぶとそれだけに絞り込みます（複数可）。「すべて」で解除。</p>
         </div>
 
@@ -251,6 +263,7 @@
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="pl-4 pr-1 py-3 w-8" title="比較したいモデルにチェック"><i class="fas fa-check-square text-gray-300"></i></th>
                   <th @click="sortBy('company')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
@@ -273,8 +286,14 @@
                     合計費用 <span class="text-gray-400 ml-0.5">{{ sortIcon('costUSD') }}</span>
                   </th>
                   <th @click="sortBy('ratio')"
-                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
-                    最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                    title="チェックした中の最安（未チェックなら表示中の最安）を ×1 とした倍率">
+                    比較 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                  </th>
+                  <th @click="sortBy('released')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="API で使えるようになった日（プレビュー含む）">
+                    公開日 <span class="text-gray-400 ml-0.5">{{ sortIcon('released') }}</span>
                   </th>
                   <th @click="sortBy('eol')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
@@ -285,12 +304,17 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
-                  <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-400">
                     該当するモデルがありません
                   </td>
                 </tr>
                 <tr v-for="m in sortedModels" :key="m.company + '/' + m.name"
-                    :class="m.ratio === 1 ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
+                    :class="m.isBase ? 'bg-green-50 hover:bg-green-100' : m.checked ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-gray-50'">
+                  <td class="pl-4 pr-1 py-3">
+                    <input type="checkbox" :checked="m.checked" @change="toggleCheck(m.company + '/' + m.name)"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                           :aria-label="m.name + ' を比較に入れる'"/>
+                  </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="providerUrls[m.company]" target="_blank" rel="noopener noreferrer"
                        class="hover:text-blue-600 hover:underline">{{ m.company }}</a>
@@ -303,13 +327,20 @@
                     <span class="text-gray-500">(¥{{ fmt(m.costJPY) }})</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                    <span v-if="m.ratio === 1"
+                    <span v-if="m.isBase"
                           class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">
-                      最安
+                      基準 ×1
+                    </span>
+                    <span v-else-if="m.ratio < 1" class="text-green-700" title="基準より安い">
+                      ×{{ m.ratio.toFixed(2) }}
                     </span>
                     <span v-else :class="m.ratio < 5 ? 'text-gray-700' : m.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
                       ×{{ m.ratio < 10 ? m.ratio.toFixed(1) : Math.round(m.ratio).toLocaleString() }}
                     </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 tabular-nums">
+                    <span v-if="m.released">{{ m.released }}</span>
+                    <span v-else class="text-gray-300">不明</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm">
                     <span v-if="m.eol" class="text-amber-600"
@@ -400,6 +431,8 @@
             exchangeRateDate: null,
             exchangeRateLoading: true,
             pickedCompanies: [],   // 空 = すべて表示
+            checkedKeys: [],       // 比較用にチェックした行（"会社/モデル名"）
+            checkedOnly: false,
 
             modes: {
               tts:      { label: '読み上げ (TTS)',       unit: '$/文字',       icon: 'fas fa-volume-up' },
@@ -427,71 +460,71 @@
             catalog: {
               tts: {
                 OpenAI: {
-                  "tts-1":            { perMChar: 15.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini" },
-                  "tts-1-hd":         { perMChar: 30.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini" },
-                  "gpt-4o-mini-tts":  { textInPerMTok: 0.60, audioOutPerMTok: 12.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini" },
+                  "tts-1":            { perMChar: 15.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini", released: "2023-11-06" },
+                  "tts-1-hd":         { perMChar: 30.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini", released: "2023-11-06" },
+                  "gpt-4o-mini-tts":  { textInPerMTok: 0.60, audioOutPerMTok: 12.00, eol: "2027-01-06", successor: "gpt-realtime-2.1-mini", released: "2025-03-20" },
                 },
                 Google: {
                   // 3.8 系は 2026-12-31 までの価格。2027-01-01 に倍増（$9→$18 / $6→$12）
-                  "Gemini 3.8 Flash TTS (〜12/31)":      { textInPerMTok: 0.50, audioOutPerMTok: 9.00 },
-                  "Gemini 3.8 Flash-Lite TTS (〜12/31)": { textInPerMTok: 0.50, audioOutPerMTok: 6.00 },
-                  "Gemini 2.5 Flash Preview TTS":        { textInPerMTok: 0.50, audioOutPerMTok: 10.00 },
-                  "Gemini 2.5 Pro Preview TTS":          { textInPerMTok: 1.00, audioOutPerMTok: 20.00 },
+                  "Gemini 3.8 Flash TTS (〜12/31)":      { textInPerMTok: 0.50, audioOutPerMTok: 9.00, released: "2026-09-22" },
+                  "Gemini 3.8 Flash-Lite TTS (〜12/31)": { textInPerMTok: 0.50, audioOutPerMTok: 6.00, released: "2026-09-22" },
+                  "Gemini 2.5 Flash Preview TTS":        { textInPerMTok: 0.50, audioOutPerMTok: 10.00, released: "2025-05-20" },
+                  "Gemini 2.5 Pro Preview TTS":          { textInPerMTok: 1.00, audioOutPerMTok: 20.00, released: "2025-05-20" },
                 },
                 ElevenLabs: {
-                  "Eleven v4":            { perMChar: 80.00 },
-                  "Eleven v4 Turbo":      { perMChar: 40.00 },
+                  "Eleven v4":            { perMChar: 80.00, released: "2026-09" },
+                  "Eleven v4 Turbo":      { perMChar: 40.00, released: "2026-09" },
                   "Eleven v3":            { perMChar: 80.00 },
-                  "Eleven v3 Conversational": { perMChar: 40.00 },
+                  "Eleven v3 Conversational": { perMChar: 40.00, released: "2026-08" },
                   "Eleven Flash / Turbo": { perMChar: 40.00 },
                 },
                 Deepgram: {
                   "Aura-1": { perMChar: 15.00 },
-                  "Aura-2": { perMChar: 30.00 },
+                  "Aura-2": { perMChar: 30.00, released: "2025-04-15" },
                 },
               },
 
               stt: {
                 OpenAI: {
-                  "gpt-4o-mini-transcribe": { perMin: 0.003,  eol: "2027-02-26", successor: "gpt-transcribe" },
-                  "gpt-transcribe":         { perMin: 0.0045 },
-                  "whisper-1":              { perMin: 0.006,  eol: "2027-02-26", successor: "gpt-transcribe" },
-                  "gpt-4o-transcribe":      { perMin: 0.006,  eol: "2027-02-26", successor: "gpt-transcribe" },
-                  "gpt-live-transcribe":    { perMin: 0.017 },
+                  "gpt-4o-mini-transcribe": { perMin: 0.003,  eol: "2027-02-26", successor: "gpt-transcribe", released: "2025-03-20" },
+                  "gpt-transcribe":         { perMin: 0.0045, released: "2026-07-28" },
+                  "whisper-1":              { perMin: 0.006,  eol: "2027-02-26", successor: "gpt-transcribe", released: "2023-03-01" },
+                  "gpt-4o-transcribe":      { perMin: 0.006,  eol: "2027-02-26", successor: "gpt-transcribe", released: "2025-03-20" },
+                  "gpt-live-transcribe":    { perMin: 0.017, released: "2026-07-28" },
                   "gpt-realtime-whisper":   { perMin: 0.017 },
                   "gpt-realtime-translate": { perMin: 0.034 },
                 },
                 Google: {
-                  "Gemini 3.5 Transcribe":      { audioInPerMTok: 2.00, textOutPerMTok: 12.00 },
-                  "Gemini 3.5 Transcribe Live": { audioInPerMTok: 3.50, textOutPerMTok: 21.00 },
+                  "Gemini 3.5 Transcribe":      { audioInPerMTok: 2.00, textOutPerMTok: 12.00, released: "2026-08" },
+                  "Gemini 3.5 Transcribe Live": { audioInPerMTok: 3.50, textOutPerMTok: 21.00, released: "2026-08" },
                 },
                 ElevenLabs: {
-                  "Scribe v3":          { perMin: 0.20 / 60 },
-                  "Scribe v3 Live":     { perMin: 0.22 / 60 },
+                  "Scribe v3":          { perMin: 0.20 / 60, released: "2026-11-10" },
+                  "Scribe v3 Live":     { perMin: 0.22 / 60, released: "2026-11-10" },
                   "Scribe v2":          { perMin: 0.20 / 60 },
                   "Scribe v2 Medical":  { perMin: 0.20 / 60 },
                   "Scribe v2 Realtime": { perMin: 0.22 / 60 },
                 },
                 Deepgram: {
-                  "Nova-3 Mono (pre-recorded)":   { perMin: 0.0043 },
-                  "Nova-3 Multi (pre-recorded)":  { perMin: 0.0052 },
-                  "Nova-3 Mono (streaming・promo)":  { perMin: 0.0048 },
-                  "Nova-3 Multi (streaming・promo)": { perMin: 0.0058 },
+                  "Nova-3 Mono (pre-recorded)":   { perMin: 0.0043, released: "2025-02-12" },
+                  "Nova-3 Multi (pre-recorded)":  { perMin: 0.0052, released: "2025-02-12" },
+                  "Nova-3 Mono (streaming・promo)":  { perMin: 0.0048, released: "2025-02-12" },
+                  "Nova-3 Multi (streaming・promo)": { perMin: 0.0058, released: "2025-02-12" },
                 },
               },
 
               realtime: {
                 OpenAI: {
-                  "gpt-realtime-2.1":      { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
-                  "gpt-realtime-2.1-mini": { audioInPerMTok: 10.00, audioOutPerMTok: 20.00 },
+                  "gpt-realtime-2.1":      { audioInPerMTok: 32.00, audioOutPerMTok: 64.00, released: "2026-07" },
+                  "gpt-realtime-2.1-mini": { audioInPerMTok: 10.00, audioOutPerMTok: 20.00, released: "2026-07" },
                   "gpt-audio-1.5":         { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
-                  "gpt-audio-mini":        { audioInPerMTok: 10.00, audioOutPerMTok: 20.00, eol: "2027-01-20", successor: "gpt-audio-1.5" },
-                  "gpt-live-1 (セッション定額)": { perMin: 0.05 },
+                  "gpt-audio-mini":        { audioInPerMTok: 10.00, audioOutPerMTok: 20.00, eol: "2027-01-20", successor: "gpt-audio-1.5", released: "2025-10-06" },
+                  "gpt-live-1 (セッション定額)": { perMin: 0.05, released: "2026-09-10" },
                 },
                 Google: {
-                  "Gemini 3.8 Live":                  { audioInPerMTok: 3.00, audioOutPerMTok: 12.00 },
-                  "Gemini 2.5 Flash Native Audio":    { audioInPerMTok: 3.00, audioOutPerMTok: 12.00 },
-                  "Gemini 3.5 Live Translate":        { audioInPerMTok: 3.50, audioOutPerMTok: 21.00 },
+                  "Gemini 3.8 Live":                  { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, released: "2026-09-15" },
+                  "Gemini 2.5 Flash Native Audio":    { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, released: "2025-12-12" },
+                  "Gemini 3.5 Live Translate":        { audioInPerMTok: 3.50, audioOutPerMTok: 21.00, released: "2026-06" },
                 },
               },
             },
@@ -534,7 +567,7 @@
             return this.results.filter(m => this.pickedCompanies.includes(m.company));
           },
 
-          // 最安比は「いま表示している中」で計算する
+          // 表示中の最安（チェックが無いときの比較の基準）。「いま表示している中」で計算する
           minCostUSD() {
             let min = Infinity;
             for (const m of this.visibleRows) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
@@ -547,12 +580,40 @@
             return c;
           },
 
+          // 比較の基準: チェックした行があればその中の最安、無ければ表示中の最安
+          baseCostUSD() {
+            const pool = this.checkedKeys.length
+              ? this.visibleRows.filter(m => this.checkedKeys.includes(m.company + '/' + m.name))
+              : this.visibleRows;
+            let min = Infinity;
+            for (const m of pool) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
+            return min === Infinity ? this.minCostUSD : min;
+          },
+
           sortedModels() {
-            const min = this.minCostUSD;
-            const flat = this.visibleRows.map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
+            const base = this.baseCostUSD;
+            const anyChecked = this.checkedKeys.length > 0;
+            let rows = this.visibleRows.map(m => {
+              const checked = this.checkedKeys.includes(m.company + '/' + m.name);
+              return {
+                ...m, checked,
+                ratio: base > 0 ? m.costUSD / base : 1,
+                isBase: (!anyChecked || checked) && m.costUSD === base,
+              };
+            });
+            if (anyChecked && this.checkedOnly) rows = rows.filter(r => r.checked);
             const dir = this.sortDirection === 'asc' ? 1 : -1;
-            return flat.sort((a, b) => {
-              const av = a[this.sortColumn], bv = b[this.sortColumn];
+            return rows.sort((a, b) => {
+              // 日付の列は「不明」を常に末尾に置く
+              if (this.sortColumn === 'eol' || this.sortColumn === 'released') {
+                const av = a[this.sortColumn], bv = b[this.sortColumn];
+                if (!av && !bv) return 0;
+                if (!av) return 1;
+                if (!bv) return -1;
+                return dir * av.localeCompare(bv);
+              }
+              const av = a[this.sortColumn];
+              const bv = b[this.sortColumn];
               if (typeof av === 'string') return dir * av.localeCompare(bv, 'ja');
               return dir * (av - bv);
             });
@@ -560,9 +621,21 @@
         },
 
         methods: {
-          // タブを切り替えたら絞り込みを解除する（会社の顔ぶれがタブごとに違うため）
+          // タブを切り替えたら絞り込みとチェックを解除する（会社・モデルの顔ぶれがタブごとに違うため）
           syncCompanies() {
             this.pickedCompanies = [];
+            this.clearChecks();
+          },
+
+          toggleCheck(key) {
+            const i = this.checkedKeys.indexOf(key);
+            if (i >= 0) this.checkedKeys.splice(i, 1);
+            else this.checkedKeys.push(key);
+          },
+
+          clearChecks() {
+            this.checkedKeys = [];
+            this.checkedOnly = false;
           },
 
           togglePick(c) {
@@ -707,6 +780,7 @@
                   company, name,
                   unitLabel: this.unitLabelOf(spec),
                   eol: spec.eol || null,
+                  released: spec.released || null,
                   successor: spec.successor || null,
                   perMin,
                   costUSD,

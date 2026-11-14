@@ -196,6 +196,18 @@
               うち {{ hiddenByLatest.cheaper }} 件は表示中の最安より安い
             </span>
           </div>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <template v-if="checkedKeys.length">
+              <span class="text-gray-700"><i class="fas fa-check-square text-blue-500 mr-1"></i>{{ checkedKeys.length }} 件をチェック中 — その中の最安を ×1 として比較</span>
+              <button type="button" @click="checkedOnly = !checkedOnly"
+                      class="px-2 py-0.5 rounded border transition-colors"
+                      :class="checkedOnly ? 'border-blue-400 bg-blue-50 text-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                チェックしたものだけ表示
+              </button>
+              <button type="button" @click="clearChecks" class="text-gray-400 hover:text-gray-600 underline">チェックを外す</button>
+            </template>
+            <span v-else class="text-gray-400">行の左のチェックで比べたいモデルを選ぶと、その中の最安を ×1 として比較します（未選択なら表示中の最安が基準）。</span>
+          </div>
           <p class="text-xs text-gray-400">
             会社を選ぶとそれだけに絞り込みます（複数可）。「最新だけ」は同じ系列の旧版を隠します（例: gpt-6.1-sol があれば gpt-6-sol・gpt-5.6-sol は隠す）。
           </p>
@@ -206,6 +218,7 @@
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="pl-4 pr-1 py-3 w-8" title="比較したいモデルにチェック"><i class="fas fa-check-square text-gray-300"></i></th>
                   <th @click="sortBy('company')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
                     会社 <span class="text-gray-400 ml-0.5">{{ sortIcon('company') }}</span>
@@ -231,8 +244,14 @@
                     合計費用 <span class="text-gray-400 ml-0.5">{{ sortIcon('costUSD') }}</span>
                   </th>
                   <th @click="sortBy('ratio')"
-                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap">
-                    最安比 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                    title="チェックした中の最安（未チェックなら表示中の最安）を ×1 とした倍率">
+                    比較 <span class="text-gray-400 ml-0.5">{{ sortIcon('ratio') }}</span>
+                  </th>
+                  <th @click="sortBy('released')"
+                      class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                      title="API で使えるようになった日（プレビュー含む）">
+                    公開日 <span class="text-gray-400 ml-0.5">{{ sortIcon('released') }}</span>
                   </th>
                   <th @click="sortBy('eol')"
                       class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
@@ -243,12 +262,17 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
-                  <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colspan="10" class="px-4 py-8 text-center text-sm text-gray-400">
                     該当するモデルがありません
                   </td>
                 </tr>
                 <tr v-for="model in sortedModels" :key="model.company + '/' + model.name"
-                    :class="model.ratio === 1 ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'">
+                    :class="model.isBase ? 'bg-green-50 hover:bg-green-100' : model.checked ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-gray-50'">
+                  <td class="pl-4 pr-1 py-3">
+                    <input type="checkbox" :checked="model.checked" @change="toggleCheck(model.company + '/' + model.name)"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                           :aria-label="model.name + ' を比較に入れる'"/>
+                  </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
                        class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
@@ -271,13 +295,20 @@
                     <span class="text-gray-500">(¥{{ fmt(model.costJPY) }})</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                    <span v-if="model.ratio === 1"
+                    <span v-if="model.isBase"
                           class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">
-                      最安
+                      基準 ×1
+                    </span>
+                    <span v-else-if="model.ratio < 1" class="text-green-700" title="基準より安い">
+                      ×{{ model.ratio.toFixed(2) }}
                     </span>
                     <span v-else :class="model.ratio < 5 ? 'text-gray-700' : model.ratio < 50 ? 'text-amber-600' : 'text-red-500'">
                       ×{{ model.ratio < 10 ? model.ratio.toFixed(1) : Math.round(model.ratio).toLocaleString() }}
                     </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 tabular-nums">
+                    <span v-if="model.released">{{ model.released }}</span>
+                    <span v-else class="text-gray-300">不明</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm">
                     <span v-if="model.eol" class="text-amber-600" title="提供終了（予定）日">{{ model.eol }}</span>
@@ -335,6 +366,8 @@
             sortColumn: 'costUSD',
             sortDirection: 'asc',
             pickedCompanies: [],   // 空 = すべて表示
+            checkedKeys: [],       // 比較用にチェックした行（"会社/モデル名"）
+            checkedOnly: false,
             latestOnly: false,
             // ▼各社公式 Pricing の Standard（$/1M tokens）。出典 URL は各 price_url。
             services: {
@@ -346,28 +379,28 @@
                 models: {
                   // developers.openai.com/api/docs/pricing — gpt-6.1 / gpt-6 / gpt-5.6 / gpt-5.5 / gpt-5.4 / gpt-5 ファミリー
                   // GPT-6 世代（2026-09）: 短コンテキスト帯の標準料金
-                  "gpt-6-astra":             { input: 10.00, output: 50.00,  thinking: true  },
-                  "gpt-6.1-sol":             { input: 2.00,  output: 10.00,  thinking: true  },
-                  "gpt-6.1-terra":           { input: 1.00,  output: 5.00,   thinking: true  },
-                  "gpt-6-sol":               { input: 2.00,  output: 10.00,  thinking: true  },
-                  "gpt-6-luna":              { input: 0.10,  output: 0.50,   thinking: true  },
+                  "gpt-6-astra":             { input: 10.00, output: 50.00,  thinking: true, released: "2026-09-03" },
+                  "gpt-6.1-sol":             { input: 2.00,  output: 10.00,  thinking: true, released: "2026-09-29" },
+                  "gpt-6.1-terra":           { input: 1.00,  output: 5.00,   thinking: true, released: "2026-10-26" },
+                  "gpt-6-sol":               { input: 2.00,  output: 10.00,  thinking: true, released: "2026-09-22" },
+                  "gpt-6-luna":              { input: 0.10,  output: 0.50,   thinking: true, released: "2026-09-22" },
                   // GPT-5.6 世代（Sol は 2026-11-30 までのプロモ価格。11/21 から延長）
-                  "gpt-5.6-sol":             { input: 4.00,  output: 20.00,  thinking: true  },
-                  "gpt-5.6-terra":           { input: 2.00,  output: 12.00,  thinking: true  },
-                  "gpt-5.6-luna":            { input: 0.20,  output: 1.20,   thinking: true  },
-                  "gpt-5.5 (<272K ctx)":     { input: 5.00,  output: 30.00,  thinking: true  },
-                  "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
-                  "gpt-5.4 (<272K ctx)":     { input: 2.50,  output: 15.00,  thinking: true  },
-                  "gpt-5.4-mini":            { input: 0.75,  output: 4.50,   thinking: true  },
-                  "gpt-5.4-nano":            { input: 0.20,  output: 1.25,   thinking: true,  eol: "2027-04-01" },
-                  "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true  },
-                  "gpt-5-mini":              { input: 0.25,  output: 2.00,   thinking: true,  eol: "2026-12-11" },
-                  "gpt-5-nano":              { input: 0.050, output: 0.40,   thinking: true,  eol: "2026-12-11" },
+                  "gpt-5.6-sol":             { input: 4.00,  output: 20.00,  thinking: true, released: "2026-07-09" },
+                  "gpt-5.6-terra":           { input: 2.00,  output: 12.00,  thinking: true, released: "2026-07-09" },
+                  "gpt-5.6-luna":            { input: 0.20,  output: 1.20,   thinking: true, released: "2026-07-09" },
+                  "gpt-5.5 (<272K ctx)":     { input: 5.00,  output: 30.00,  thinking: true, released: "2026-04-24" },
+                  "gpt-5.5-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true, released: "2026-04-24" },
+                  "gpt-5.4 (<272K ctx)":     { input: 2.50,  output: 15.00,  thinking: true, released: "2026-03-05" },
+                  "gpt-5.4-mini":            { input: 0.75,  output: 4.50,   thinking: true, released: "2026-03-17" },
+                  "gpt-5.4-nano":            { input: 0.20,  output: 1.25,   thinking: true,  eol: "2027-04-01", released: "2026-03-17" },
+                  "gpt-5.4-pro (<272K ctx)": { input: 30.00, output: 180.00, thinking: true, released: "2026-03-05" },
+                  "gpt-5-mini":              { input: 0.25,  output: 2.00,   thinking: true,  eol: "2026-12-11", released: "2025-08-07" },
+                  "gpt-5-nano":              { input: 0.050, output: 0.40,   thinking: true,  eol: "2026-12-11", released: "2025-08-07" },
                   // gpt-4.1 / gpt-4o ファミリー（現役・非推論 = reasoning 非対応）
-                  "gpt-4.1":     { input: 2.00, output: 8.00,  thinking: false, eol: "2027-01-14" },
-                  "gpt-4.1-mini":{ input: 0.40, output: 1.60,  thinking: false, eol: "2027-01-14" },
-                  "gpt-4o":      { input: 2.50, output: 10.00, thinking: false, eol: "2027-01-14" },
-                  "gpt-4o-mini": { input: 0.15, output: 0.60,  thinking: false, eol: "2027-01-14" },
+                  "gpt-4.1":     { input: 2.00, output: 8.00,  thinking: false, eol: "2027-01-14", released: "2025-04-14" },
+                  "gpt-4.1-mini":{ input: 0.40, output: 1.60,  thinking: false, eol: "2027-01-14", released: "2025-04-14" },
+                  "gpt-4o":      { input: 2.50, output: 10.00, thinking: false, eol: "2027-01-14", released: "2024-05-13" },
+                  "gpt-4o-mini": { input: 0.15, output: 0.60,  thinking: false, eol: "2027-01-14", released: "2024-07-18" },
                 },
               },
 
@@ -378,10 +411,10 @@
                 tokens_url: "https://docs.anthropic.com/en/docs/build-with-claude/token-counting",
                 models: {
                   // platform.claude.com — 各ライン最新（Fable / Opus / Sonnet / Haiku）のみ、$/MTok
-                  "claude-fable-5-2":  { input: 8.00,  output: 40.00, thinking: true },
-                  "claude-opus-5-5":   { input: 4.00,  output: 20.00, thinking: true },
-                  "claude-sonnet-5-5": { input: 2.00,  output: 10.00, thinking: true },
-                  "claude-haiku-5-5 (≤100k prompt)": { input: 0.10, output: 0.50, thinking: true },
+                  "claude-fable-5-2":  { input: 8.00,  output: 40.00, thinking: true, released: "2026-11-09" },
+                  "claude-opus-5-5":   { input: 4.00,  output: 20.00, thinking: true, released: "2026-09-22" },
+                  "claude-sonnet-5-5": { input: 2.00,  output: 10.00, thinking: true, released: "2026-09-28" },
+                  "claude-haiku-5-5 (≤100k prompt)": { input: 0.10, output: 0.50, thinking: true, released: "2026-10-07" },
                 },
               },
 
@@ -395,20 +428,20 @@
                   // 2026-07-21 リリース: 3.6 Flash / 3.5 Flash-Lite（Cyber は政府・信頼パートナー限定のため未収録）
                   // Flash 3.6〜3.8 は 2026-12-31 までプロモ価格（2027-01-01 に $1.50/$7.50 へ倍増）
                   // Gemini 4 世代: Carbon / Argon は 〜2026-11-30 プロモ、12/01 に $4.00/$20.00 へ倍増。Hydrogen は定価
-                  "gemini-4-carbon (〜11/30 プロモ)":            { input: 2.00, output: 10.00, thinking: true  },
-                  "gemini-4-argon (〜11/30 プロモ)":             { input: 2.00, output: 10.00, thinking: true  },
-                  "gemini-4-hydrogen":                         { input: 1.50, output: 7.50,  thinking: true  },
-                  "gemini-3.8-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true  },
-                  "gemini-3.6-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true  },
-                  "gemini-3.5-flash-lite (text/image/video)":   { input: 0.30, output: 2.50,  thinking: true  },
-                  "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true  },
-                  "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: true  },
-                  "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true  },
+                  "gemini-4-carbon (〜11/30 プロモ)":            { input: 2.00, output: 10.00, thinking: true, released: "2026-11-10" },
+                  "gemini-4-argon (〜11/30 プロモ)":             { input: 2.00, output: 10.00, thinking: true, released: "2026-10-13" },
+                  "gemini-4-hydrogen":                         { input: 1.50, output: 7.50,  thinking: true, released: "2026-11-12" },
+                  "gemini-3.8-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true, released: "2026-09-02" },
+                  "gemini-3.6-flash (〜12/31 プロモ)":           { input: 0.75, output: 3.75,  thinking: true, released: "2026-07-21" },
+                  "gemini-3.5-flash-lite (text/image/video)":   { input: 0.30, output: 2.50,  thinking: true, released: "2026-07-21" },
+                  "gemini-3.1-pro-preview (≤200k prompt)":     { input: 2.00, output: 12.00, thinking: true, released: "2026-02-19" },
+                  "gemini-3.1-flash-lite (text/image/video)":   { input: 0.25, output: 1.50,  thinking: true, released: "2026-05-07" },
+                  "gemini-3-flash-preview (text/image/video)":  { input: 0.50, output: 3.00,  thinking: true, released: "2025-12-17" },
                   // 2.5 Pro / 2.5 Flash は deprecated。2026-12-01 以降の API リクエストは
                   // それぞれ 3.8 Flash / 3.5 Flash-Lite へ自動転送される（実質の EOL）。2.5 Flash-Lite は告知なし
-                  "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true,  eol: "2026-12-01" },
-                  "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true,  eol: "2026-12-01" },
-                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: true  },
+                  "gemini-2.5-pro (≤200k prompt)":              { input: 1.25, output: 10.00, thinking: true,  eol: "2026-12-01", released: "2025-06-17" },
+                  "gemini-2.5-flash (text/image/video)":        { input: 0.30, output: 2.50,  thinking: true,  eol: "2026-12-01", released: "2025-06-17" },
+                  "gemini-2.5-flash-lite (text/image/video)":   { input: 0.10, output: 0.40,  thinking: true, released: "2025-07-22" },
                 },
               },
 
@@ -421,8 +454,8 @@
                   // api-docs.deepseek.com/quick_start/pricing — 掲載は「ピーク料金」。
                   // オフピーク（平日 01:00-04:00 / 06:00-10:00 UTC 以外）は半額。
                   // V4 Flash は引退済みで、現在は V4.1-Flash が Flash 料金で配信される。
-                  "deepseek-v4-pro":       { input: 1.32, output: 3.96, thinking: true },
-                  "deepseek-flash (V4.1)": { input: 0.30, output: 1.20, thinking: true },
+                  "deepseek-v4-pro":       { input: 1.32, output: 3.96, thinking: true, released: "2026-04-24" },
+                  "deepseek-flash (V4.1)": { input: 0.30, output: 1.20, thinking: true, released: "2026-09-10" },
                 },
               },
 
@@ -434,11 +467,11 @@
                 models: {
                   // docs.x.ai/developers/pricing — 200k トークン未満の帯。200k 以上は入出力とも倍額。
                   // Grok 4.x は全て reasoning 対応。Grok Build 0.1 は推論が常時オン（effort 変更不可）。
-                  "grok-4.7 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true },
-                  "grok-4.6 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true },
-                  "grok-4.5 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true },
-                  "grok-4.3 (<200k ctx)":     { input: 1.25, output: 2.50, thinking: true },
-                  "grok-build-0.1 (<200k ctx)": { input: 1.00, output: 2.00, thinking: true },
+                  "grok-4.7 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true, released: "2026-09-21" },
+                  "grok-4.6 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true, released: "2026-08" },
+                  "grok-4.5 (<200k ctx)":     { input: 2.00, output: 6.00, thinking: true, released: "2026-07-08" },
+                  "grok-4.3 (<200k ctx)":     { input: 1.25, output: 2.50, thinking: true, released: "2026-04" },
+                  "grok-build-0.1 (<200k ctx)": { input: 1.00, output: 2.00, thinking: true, released: "2026-05" },
                 },
               },
 
@@ -450,15 +483,15 @@
                 models: {
                   // aws.amazon.com/bedrock/pricing — Amazon Nova ファミリー + Google Gemma 4、On-Demand 標準料金
                   // Nova 2 世代（2025-12）: extended thinking 対応
-                  "Nova 2 Pro (preview)": { input: 2.19,  output: 17.50, thinking: true  },
-                  "Nova 2 Lite":          { input: 0.30,  output: 2.50,  thinking: true  },
+                  "Nova 2 Pro (preview)": { input: 2.19,  output: 17.50, thinking: true, released: "2025-12-02" },
+                  "Nova 2 Lite":          { input: 0.30,  output: 2.50,  thinking: true, released: "2025-12-02" },
                   // Nova v1 世代: reasoning 非対応
-                  "Nova Micro":   { input: 0.035, output: 0.14,  thinking: false },
-                  "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false },
-                  "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: false },
+                  "Nova Micro":   { input: 0.035, output: 0.14,  thinking: false, released: "2024-12-03" },
+                  "Nova Lite":    { input: 0.060, output: 0.24,  thinking: false, released: "2024-12-03" },
+                  "Nova Pro":     { input: 0.80,  output: 3.20,  thinking: false, released: "2024-12-03" },
                   // Google Gemma 4（Bedrock ホスト、2026-06〜）: reasoning 内蔵。中身は Google 製
-                  "Gemma 4 31B (Google)":     { input: 0.14, output: 0.40, thinking: true },
-                  "Gemma 4 26B-A4B (Google)": { input: 0.06, output: 0.33, thinking: true }, // Bedrock価格は参考値（OpenRouter基準）
+                  "Gemma 4 31B (Google)":     { input: 0.14, output: 0.40, thinking: true, released: "2026-03-31" }, // 公開日は Google のモデル公開日（Bedrock 提供は 2026-06-10）
+                  "Gemma 4 26B-A4B (Google)": { input: 0.06, output: 0.33, thinking: true, released: "2026-03-31" }, // Bedrock価格は参考値（OpenRouter基準）
                 },
               },
             },
@@ -520,22 +553,44 @@
             return out;
           },
 
-          // 最安比は「いま表示している中」で計算する。絞り込んだときに意味のある比較になるように
+          // 表示中の最安（チェックが無いときの比較の基準）。「いま表示している中」で計算する。絞り込んだときに意味のある比較になるように
           minCostUSD() {
             let min = Infinity;
             for (const m of this.visibleRows) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
             return min === Infinity ? 0 : min;
           },
 
+          // 比較の基準: チェックした行があればその中の最安、無ければ表示中の最安
+          baseCostUSD() {
+            const pool = this.checkedKeys.length
+              ? this.visibleRows.filter(m => this.checkedKeys.includes(m.company + '/' + m.name))
+              : this.visibleRows;
+            let min = Infinity;
+            for (const m of pool) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
+            return min === Infinity ? this.minCostUSD : min;
+          },
+
           sortedModels() {
-            const min = this.minCostUSD;
-            const flat = this.visibleRows.map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
+            const base = this.baseCostUSD;
+            const anyChecked = this.checkedKeys.length > 0;
+            let rows = this.visibleRows.map(m => {
+              const checked = this.checkedKeys.includes(m.company + '/' + m.name);
+              return {
+                ...m, checked,
+                ratio: base > 0 ? m.costUSD / base : 1,
+                isBase: (!anyChecked || checked) && m.costUSD === base,
+              };
+            });
+            if (anyChecked && this.checkedOnly) rows = rows.filter(r => r.checked);
             const dir = this.sortDirection === 'asc' ? 1 : -1;
-            return flat.sort((a, b) => {
-              if (this.sortColumn === 'eol') {
-                const ax = a.eol || '9999-99-99';
-                const bx = b.eol || '9999-99-99';
-                return dir * ax.localeCompare(bx);
+            return rows.sort((a, b) => {
+              // 日付の列は「不明」を常に末尾に置く
+              if (this.sortColumn === 'eol' || this.sortColumn === 'released') {
+                const av = a[this.sortColumn], bv = b[this.sortColumn];
+                if (!av && !bv) return 0;
+                if (!av) return 1;
+                if (!bv) return -1;
+                return dir * av.localeCompare(bv);
               }
               const av = a[this.sortColumn];
               const bv = b[this.sortColumn];
@@ -573,6 +628,17 @@
         },
 
         methods: {
+          toggleCheck(key) {
+            const i = this.checkedKeys.indexOf(key);
+            if (i >= 0) this.checkedKeys.splice(i, 1);
+            else this.checkedKeys.push(key);
+          },
+
+          clearChecks() {
+            this.checkedKeys = [];
+            this.checkedOnly = false;
+          },
+
           togglePick(c) {
             const i = this.pickedCompanies.indexOf(c);
             if (i >= 0) this.pickedCompanies.splice(i, 1);
@@ -645,6 +711,7 @@
                   outputPrice: price.output,
                   thinking: price.thinking || false,
                   eol: price.eol || null,
+                  released: price.released || null,
                   line: price.line || null,
                   ver: price.ver ?? null,
                   costUSD: totalCostUSD,
