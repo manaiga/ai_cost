@@ -125,7 +125,7 @@
 ### 廃止（EOL）情報
 - OpenAI: https://developers.openai.com/api/docs/deprecations
 - Anthropic: https://platform.claude.com/docs/en/about-claude/model-deprecations
-- Google: 料金ページ内の各モデルの注記（deprecated / shutdown / 転送先）
+- Google: https://aistudio.google.com/docs/deprecations （料金ページ内の deprecated 注記と併せて見る。日付は「最短」で延期されることがある）
 - AWS Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html
 
 ## 技術仕様
