@@ -139,7 +139,7 @@
           <span v-else>
             為替レート: <strong>$1 = ¥{{ exchangeRate }}</strong>
             <span v-if="exchangeRateDate" class="text-gray-400 ml-1">（{{ exchangeRateDate }} 取得）</span>
-            <span v-else class="text-gray-400 ml-1">（フォールバック値）</span>
+            <span v-else class="text-amber-600 ml-1"><i class="fas fa-exclamation-triangle mr-0.5"></i>取得失敗のため仮の値</span>
           </span>
         </div>
 
@@ -310,7 +310,7 @@
                 <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong>。GPT-6 / GPT-5.6 は<strong>短コンテキスト帯</strong>、Gemini 3.1 Pro 等は「200k トークン以下」、GPT-5.5 / GPT-5.4 系は「272k 未満コンテキスト」、<strong>Grok は「200k 未満」</strong>（200k 以上は入力・出力とも<strong>倍額</strong>）の掲載に準拠。<strong>コンテキスト量で単価が変わるモデルは、少ない方の帯の1行だけ</strong>を載せています（Claude Haiku 5.5 は 100k 超で 5倍）。長いプロンプトでは公式どおり単価が変わります。<strong>期間限定価格</strong>: <strong>Gemini 4 Carbon / Argon は 2026-11-30 まで</strong>のプロモで、12/01 に $4.00/$20.00 へ倍増（Hydrogen は定価）。Gemini 3.6〜3.8 Flash は 2026-12-31 までのプロモで、2027-01-01 に $1.50/$7.50 へ倍増（Flash-Lite 系は対象外で据え置き）。GPT-5.6 Sol は 2026-11-30 までのプロモ（11/21 から延長）。Claude Sonnet 5 の $2/$10 は導入価格から<strong>恒久価格に変更</strong>（予定されていた 9/1 の値上げは中止）。<strong>DeepSeek は「ピーク料金」を掲載</strong>し、オフピーク（平日 01:00-04:00 / 06:00-10:00 UTC 以外）は<strong>半額</strong>。AWS Nova は Amazon Bedrock On-Demand 料金。<strong>Gemma 4</strong> は Google 製オープンモデルだが Amazon Bedrock 上でホストされるため AWS Bedrock 枠に分類（推論内蔵。26B-A4B の単価は参考値）。</li>
                 <li><strong>トークナイザの違い（重要）</strong>: Claude は <strong>4.7 以降のモデルで新しいトークナイザ</strong>を使い、同じ文章でも<strong>約30%多いトークン数</strong>になります（Sonnet 4.6 以前は旧トークナイザ）。したがって単価が下がっても実費が同率で下がるとは限りません。例えば Haiku 4.5（$1/$5、旧）→ Haiku 5.5（$0.10/$0.50、新）は単価では90%減ですが、トークン増加を織り込んだ実ワークロードでの削減幅は<strong>約75%</strong>とされています。</li>
                 <li><strong>EOL（提供終了）</strong>: 各社公式の deprecation / lifecycle 情報に基づく「提供終了（予定）日」。多くは<strong>最短日で、事前告知の上で前後し得ます</strong>。現行世代など未告知のものは「不明」表記。参考: <strong>Gemini 2.5 Pro / 2.5 Flash は 2026-12-01 から 3.8 Flash / 3.5 Flash-Lite へ自動転送</strong>（実質の EOL）、<strong>gpt-5-mini / gpt-5-nano は 2026-12-11</strong>、gpt-4o / gpt-4o-mini / gpt-4.1 / gpt-4.1-mini は 2027-01-14、gpt-5.4-nano は 2027-04-01。<strong>EOL 日は「これより早くはない」という意味で延期されることがあります</strong>（gpt-4o は当初 2026-10-23 とされていたが 2027-01-14 に、Gemini 2.5 系も 10/16 から延びた）。<strong>Nova Premier（2026-09-14）と DeepSeek V4 Flash は EOL 到達済みのため一覧から削除</strong>（V4 Flash 宛のリクエストは現在 V4.1-Flash が処理）。</li>
-                <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
+                <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://frankfurter.dev/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥160（2026-11 時点の水準）を仮に使用し、画面に「取得失敗」と表示します。</li>
                 <li><strong>その他</strong>: Claude <em>Fast mode</em> やツール課金などは別レートのため、見積もりと実請求がずれることがあります。確定は各プロバイダの usage 表示を参照してください。</li>
                 <li>OpenAI・Anthropic は <em>Cached input</em> 等の別単価があります（本計算では未考慮）。</li>
               </ul>
@@ -328,7 +328,7 @@
             outputTokens: 1000,
             thinkingTokens: 0,
             numRequests: 1000,
-            exchangeRate: 150,
+            exchangeRate: 160,
             exchangeRateDate: null,
             exchangeRateLoading: true,
 
@@ -470,12 +470,12 @@
         async mounted() {
           try { this.latestOnly = localStorage.getItem('ai_cost.latestOnly') === '1'; } catch (_) {}
           try {
-            const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY');
+            const res = await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=JPY');
             const data = await res.json();
             this.exchangeRate = Math.round(data.rates.JPY * 10) / 10;
             this.exchangeRateDate = data.date;
           } catch (_) {
-            // フォールバック値 150 を維持
+            // フォールバック値 160 を維持
           } finally {
             this.exchangeRateLoading = false;
           }

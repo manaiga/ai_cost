@@ -96,7 +96,7 @@
           <span v-else>
             為替レート: <strong>$1 = ¥{{ exchangeRate }}</strong>
             <span v-if="exchangeRateDate" class="text-gray-400 ml-1">（{{ exchangeRateDate }} 取得）</span>
-            <span v-else class="text-gray-400 ml-1">（フォールバック値）</span>
+            <span v-else class="text-amber-600 ml-1"><i class="fas fa-exclamation-triangle mr-0.5"></i>取得失敗のため仮の値</span>
           </span>
         </div>
 
@@ -231,7 +231,7 @@
               <li><strong>一次提供元のみ掲載</strong>: fal / Replicate / Together 等のアグリゲータは同じモデルでもホストごとに価格が異なるため、モデル提供元の公式価格に統一しています。</li>
               <li><strong>Midjourney は未収録</strong>: 従量課金ではなく<strong>サブスク</strong>（Basic $10/月〜）のため、$/枚の表に混ぜると比較が歪みます。</li>
               <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えたためです。<strong>Gemini 2.5 Flash Image</strong> は当初 2026-10-02 廃止とされていましたが <strong>2027-03-15 に延期</strong>されたため掲載しています（後継の推奨は Gemini 3.1 Flash Lite Image）。</li>
-              <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
+              <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://frankfurter.dev/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥160（2026-11 時点の水準）を仮に使用し、画面に「取得失敗」と表示します。</li>
               <li>料金は変動します。確定は各プロバイダの usage 表示を参照してください。</li>
             </ul>
           </div>
@@ -250,7 +250,7 @@
             results: {},
             sortColumn: 'costUSD',
             sortDirection: 'asc',
-            exchangeRate: 150,
+            exchangeRate: 160,
             exchangeRateDate: null,
             exchangeRateLoading: true,
             pickedCompanies: [],   // 空 = すべて表示
@@ -343,12 +343,12 @@
 
         async mounted() {
           try {
-            const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY');
+            const res = await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=JPY');
             const data = await res.json();
             this.exchangeRate = Math.round(data.rates.JPY * 10) / 10;
             this.exchangeRateDate = data.date;
           } catch (_) {
-            // フォールバック値 150 を維持
+            // フォールバック値 160 を維持
           } finally {
             this.exchangeRateLoading = false;
           }

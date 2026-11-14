@@ -131,4 +131,4 @@
 ## 技術仕様
 - Vue.js 3 + Tailwind CSS（いずれも CDN 読み込み、ビルド不要）
 - 各ページは単一の HTML ファイルで完結（共通化はしていない）
-- 為替レート: [Frankfurter API](https://www.frankfurter.app/)（ECB レート）から自動取得、失敗時は ¥150 にフォールバック
+- 為替レート: [Frankfurter API](https://frankfurter.dev/)（ECB レート、`api.frankfurter.dev/v1`）から自動取得、失敗時は ¥160 にフォールバックし画面に「取得失敗」と表示。旧アドレス `api.frankfurter.app` は 301 転送になりブラウザでは失敗する（これで長く ¥150 固定になっていた）。週次更新ではレートが実際に取れているかも確認する
