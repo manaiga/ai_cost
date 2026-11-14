@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの音声 API使用料計算機（2026-10-20 更新）</title>
+    <title>生成AIの音声 API使用料計算機（2026-11-14 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -33,7 +33,7 @@
         生成AIの音声 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年10月20日（
+        最終更新日: 2026年11月14日（
         <a href="https://developers.openai.com/api/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://elevenlabs.io/pricing/api" class="text-blue-600 hover:underline">ElevenLabs</a> /
@@ -146,20 +146,6 @@
           </div>
         </div>
 
-        <div v-if="mode !== 'compare'" class="mt-5 border-t border-gray-100 pt-5">
-          <p class="text-sm font-medium text-gray-700 mb-3">表示するプロバイダー</p>
-          <div class="flex flex-wrap gap-3">
-            <label v-for="company in companiesInMode" :key="company"
-                   class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border transition-colors select-none"
-                   :class="selectedCompanies.includes(company)
-                     ? 'border-blue-400 bg-blue-50 text-blue-900'
-                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'">
-              <input type="checkbox" :value="company" v-model="selectedCompanies"
-                     class="text-blue-600 focus:ring-blue-500"/>
-              <span class="text-sm">{{ company }}</span>
-            </label>
-          </div>
-        </div>
 
         <div class="mt-4 flex items-center gap-3 text-sm text-gray-600">
           <span v-if="exchangeRateLoading" class="flex items-center gap-1.5">
@@ -235,6 +221,31 @@
 
       <!-- 結果テーブル -->
       <div v-if="calculated && mode !== 'compare'">
+        <!-- 絞り込み: 何も選んでいない＝すべて。選ぶと「それだけ」 -->
+        <div class="mb-4 bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-3 space-y-2">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-xs font-medium text-gray-500 mr-1">会社</span>
+            <button type="button" @click="pickedCompanies = []"
+                    class="px-3 py-1 rounded-full border text-sm transition-colors"
+                    :class="pickedCompanies.length === 0
+                      ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'">
+              すべて
+            </button>
+            <button v-for="c in companiesInMode" :key="c" type="button" @click="togglePick(c)"
+                    class="px-3 py-1 rounded-full border text-sm transition-colors inline-flex items-center gap-1.5"
+                    :class="pickedCompanies.includes(c)
+                      ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'">
+              <i v-if="pickedCompanies.includes(c)" class="fas fa-check text-[10px] text-blue-500"></i>
+              {{ c }}
+              <span class="text-xs tabular-nums"
+                    :class="pickedCompanies.includes(c) ? 'text-blue-500' : 'text-gray-400'">{{ countByCompany[c] || 0 }}</span>
+            </button>
+          </div>
+          <p class="text-xs text-gray-400">会社を選ぶとそれだけに絞り込みます（複数可）。「すべて」で解除。</p>
+        </div>
+
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -275,7 +286,7 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
                   <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
-                    表示するプロバイダーを選択してください
+                    該当するモデルがありません
                   </td>
                 </tr>
                 <tr v-for="m in sortedModels" :key="m.company + '/' + m.name"
@@ -388,7 +399,7 @@
             exchangeRate: 150,
             exchangeRateDate: null,
             exchangeRateLoading: true,
-            selectedCompanies: [],
+            pickedCompanies: [],   // 空 = すべて表示
 
             modes: {
               tts:      { label: '読み上げ (TTS)',       unit: '$/文字',       icon: 'fas fa-volume-up' },
@@ -455,9 +466,11 @@
                   "Gemini 3.5 Transcribe Live": { audioInPerMTok: 3.50, textOutPerMTok: 21.00 },
                 },
                 ElevenLabs: {
-                  "Scribe v2":          { perMin: 0.22 / 60 },
-                  "Scribe v2 Medical":  { perMin: 0.22 / 60 },
-                  "Scribe v2 Realtime": { perMin: 0.39 / 60 },
+                  "Scribe v3":          { perMin: 0.20 / 60 },
+                  "Scribe v3 Live":     { perMin: 0.22 / 60 },
+                  "Scribe v2":          { perMin: 0.20 / 60 },
+                  "Scribe v2 Medical":  { perMin: 0.20 / 60 },
+                  "Scribe v2 Realtime": { perMin: 0.22 / 60 },
                 },
                 Deepgram: {
                   "Nova-3 Mono (pre-recorded)":   { perMin: 0.0043 },
@@ -515,19 +528,28 @@
             return Object.keys(this.catalog[this.mode]);
           },
 
+          // 会社フィルタを通った行（ソート前）
+          visibleRows() {
+            if (!this.pickedCompanies.length) return this.results;
+            return this.results.filter(m => this.pickedCompanies.includes(m.company));
+          },
+
+          // 最安比は「いま表示している中」で計算する
           minCostUSD() {
             let min = Infinity;
-            for (const m of this.results) {
-              if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
-            }
+            for (const m of this.visibleRows) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
             return min === Infinity ? 0 : min;
+          },
+
+          countByCompany() {
+            const c = {};
+            for (const m of this.results) c[m.company] = (c[m.company] || 0) + 1;
+            return c;
           },
 
           sortedModels() {
             const min = this.minCostUSD;
-            const flat = this.results
-              .filter(m => this.selectedCompanies.includes(m.company))
-              .map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
+            const flat = this.visibleRows.map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
             const dir = this.sortDirection === 'asc' ? 1 : -1;
             return flat.sort((a, b) => {
               const av = a[this.sortColumn], bv = b[this.sortColumn];
@@ -538,8 +560,15 @@
         },
 
         methods: {
+          // タブを切り替えたら絞り込みを解除する（会社の顔ぶれがタブごとに違うため）
           syncCompanies() {
-            this.selectedCompanies = this.companiesInMode.slice();
+            this.pickedCompanies = [];
+          },
+
+          togglePick(c) {
+            const i = this.pickedCompanies.indexOf(c);
+            if (i >= 0) this.pickedCompanies.splice(i, 1);
+            else this.pickedCompanies.push(c);
           },
 
           sortBy(col) {

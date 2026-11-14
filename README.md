@@ -22,8 +22,20 @@
 
 ### テキスト生成（index.html）
 - 掲載は各社の **Standard** 価格。短コンテキスト帯（GPT-6 / GPT-5.6、Grok は 200k 未満など）に準拠
+- **コンテキスト量で単価が変わるモデルは、少ない方の帯の1行だけ載せる**（行を増やさない。例: Claude Haiku 5.5 は 100k 超が5倍だが ≤100k の行のみ）
 - **Thinking 列**は「推論モードに対応しているか」の厳密な可否。既定の思考量はモデルによって異なる
 - **EOL 列**は公式の deprecation / lifecycle 情報。未告知は「不明」
+
+### 絞り込み UI（3ページ共通）
+- **会社チップ**: 何も選んでいない＝すべて表示。選ぶと「それだけ」、複数選ぶと「それとそれだけ」。
+  「全部から一部を外す」より「これだけ見たい」が多いという前提の設計
+- **最安比は表示中の中で計算**する（「Claude だけ」に絞ると Claude 内の最安が「最安」になる）
+- **「各系列の最新だけ」**（index.html のみ）: 同じ系列の旧版を隠す。
+  系列と版は**モデル名から自動判定**するので「最新フラグ」をデータに持たせる必要はない
+  （`gpt-6.1-sol` → 系列 sol・版 6.1、`claude-opus-5-5` → opus・5.5、`gpt-4o-mini` → mini・4、`Nova 2 Lite` → lite・2）。
+  括弧書きと `preview` は判定から除外。手動フラグにすると新モデル追加のたびに旧モデル側も直す必要があり事故の元になる
+  - 名前から正しく判定できない例外だけ、データに `line: "..."`（系列）や `ver: 数値`（版。major×1000+minor）を書いて上書きする
+  - 旧版のほうが安いことはよくある（gpt-4o-mini は gpt-5.4-mini の 1/5）ので、隠した旧版に表示中の最安より安いものがあれば警告を出す。既定は OFF（選択はブラウザに記憶）
 
 ### 画像生成（image.html）
 - 掲載は **Standard** 価格、**テキストからの新規生成**。Batch は概ね半額、編集 / img2img は別料金のことがある
@@ -54,25 +66,50 @@
   文字課金から音声トークン課金に変わる。日本語用途では単純置換で費用が跳ねる
 
 ### 更新手順
-1. 各社の公式料金ページを確認
+1. 下記「各社の公式料金ページ」と各社の deprecations ページを確認
 2. 現在の主要モデルと価格を特定（**期間限定価格はその終了日も**）
 3. 対象ファイルのモデル構成を更新
 4. EOL 到達済みのモデルを削除し、新たに判明した EOL 日を反映
-5. 最終更新日（`<title>` と本文の2箇所）を更新
+5. 最終更新日（`<title>` と本文の**2箇所とも**）を更新し、両方変わったことを確認
+6. ヘッドレスブラウザで3ページを開き、計算ボタンを押して表が出ること・コンソールエラーが無いことを確認してからコミット
+
+## 更新時のガードレール（自動更新もこれに従う）
+
+過去に実際にやらかした失敗から作った規則。**守らないと誤った料金を公開してしまう**。
+
+- **出典は公式ページのみ**。ブログ・アグリゲータ・比較サイトは「何か変わったかも」の手がかりに留め、数値は必ず公式で確認する。
+  （FLUX の料金を二次情報から取って、存在しない `FLUX.2 [schnell]` を載せ、`FLUX.2 [pro]` を $0.05 と誤記した）
+- **1回の取得で見当たらないだけでは削除しない**。公式表から**2回連続で消えていたら**削除する。
+  ページの抽出が一部欠けることがあるため（`gemini-3-flash-preview` を「消えた」と削除したが実は残っていた）
+- **EOL 日は「これより早くはない」の意味**。日付を過ぎても**公式表に残っていれば削除しない**。延期されることが多い。
+  （gpt-4o は 2026-10-23 → 2027-01-14、Gemini 2.5 系は 10-16 から延長、Gemini 2.5 Flash Image は 10-02 → 2027-03-15。どれも日付を信じて先走った）
+- **ページ読み取り結果が食い違ったら、別の取得や別ソースで確かめる**。同じページを2回読んで逆の結論が出たことがある
+  （「Flash-Lite も年明けに値上げ」と一度報告したが誤りだった）
+- **「自動転送」は実質の EOL として扱う**（例: 2026-12-01 以降の gemini-2.5-pro へのリクエストは 3.8 Flash に転送）
+- **プロモ価格**はモデル名に終了日ラベル（例: `(〜11/30 プロモ)`）を付け、前提条件にも書く。**終了したら定価に戻してラベルを外す**
+- **限定提供**（Mythos、Flash Cyber 等の審査制）・**サブスク専用**・**アグリゲータ経由**の価格は載せない
+- **価格を間違って覚えていた可能性も疑う**。値下げに見えて実は元の値が誤りだったことがある（gpt-5-mini は $0.125/$1.00 と載せていたが公式は $0.25/$2.00）
+- **変更が無ければコミットしない**（空コミットや日付だけの更新はしない）
+- 差を過大に言わない。換算を伴う比較で 10% 未満の差は「誤差の範囲」と扱う
+
+## 自動更新（週次）
+毎週月曜 09:00（JST）に専用の Claude Code セッションが起動し、上記「更新手順」と「ガードレール」に従って
+公式料金ページを確認する。変更があれば 3ページを更新して `main` にコミットし（GitHub Pages に自動反映）、
+変更が無ければ何もしない。
 
 ## 各社の公式料金ページ
 
 ### テキスト生成
-- OpenAI: https://platform.openai.com/docs/pricing
+- OpenAI: https://developers.openai.com/api/docs/pricing
 - Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
-- Google: https://ai.google.dev/gemini-api/docs/pricing
+- Google: https://aistudio.google.com/docs/pricing （旧 ai.google.dev/gemini-api/docs/pricing からリダイレクト）
 - xAI: https://docs.x.ai/developers/pricing
 - DeepSeek: https://api-docs.deepseek.com/quick_start/pricing
-- AWS Bedrock: https://aws.amazon.com/bedrock/pricing/
+- AWS Bedrock: https://aws.amazon.com/bedrock/pricing/ （表が描画されないことがあるので二次情報で当たりを付けて裏取り）
 
 ### 画像生成
-- OpenAI: https://platform.openai.com/docs/pricing
-- Google: https://ai.google.dev/gemini-api/docs/pricing
+- OpenAI: https://developers.openai.com/api/docs/pricing
+- Google: https://aistudio.google.com/docs/pricing （Imagen 4 は Vertex AI 側で、ここには無い）
 - xAI: https://docs.x.ai/developers/pricing
 - Black Forest Labs: https://bfl.ai/pricing
 - Stability AI: https://platform.stability.ai/pricing
@@ -81,9 +118,15 @@
 
 ### 音声
 - OpenAI: https://developers.openai.com/api/docs/pricing
-- Google: https://ai.google.dev/gemini-api/docs/pricing
+- Google: https://aistudio.google.com/docs/pricing
 - ElevenLabs: https://elevenlabs.io/pricing/api
 - Deepgram: https://deepgram.com/pricing
+
+### 廃止（EOL）情報
+- OpenAI: https://developers.openai.com/api/docs/deprecations
+- Anthropic: https://platform.claude.com/docs/en/about-claude/model-deprecations
+- Google: 料金ページ内の各モデルの注記（deprecated / shutdown / 転送先）
+- AWS Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html
 
 ## 技術仕様
 - Vue.js 3 + Tailwind CSS（いずれも CDN 読み込み、ビルド不要）

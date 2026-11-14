@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの画像生成 API使用料計算機（2026-10-08 更新）</title>
+    <title>生成AIの画像生成 API使用料計算機（2026-11-14 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -33,7 +33,7 @@
         生成AIの画像生成 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年10月8日（
+        最終更新日: 2026年11月14日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://docs.x.ai/developers/pricing" class="text-blue-600 hover:underline">xAI</a> /
@@ -64,7 +64,7 @@
             <li><strong>品質設定でも大きく動きます</strong>。例えば GPT Image 2.5 は 1024² でも
               medium $0.013 → high $0.053 → max $0.211 と <strong>16倍</strong>の開きがあるため、段階ごとに別行にしています。</li>
             <li><strong>編集・img2img は別料金のことがあります</strong>。xAI は入力画像1枚につき +$0.01、
-              Flux.2 Pro の編集は生成より高め（約 $0.045/MP）です。本表は<strong>テキストから新規生成</strong>の単価です。</li>
+              FLUX.2 は <strong>メガピクセル課金</strong>（1MP 目と追加 MP で単価が違う）で、本表は 1MP（≒1024²）の単価です。本表は<strong>テキストから新規生成</strong>の単価です。</li>
             <li><strong>Batch API を使えば概ね半額</strong>になります（Gemini は公式に Batch 価格を掲載）。本表は Standard 価格です。</li>
             <li>プロンプト側の入力課金は1枚あたり $0.0001 程度で誤差のため、本計算では未考慮です。</li>
           </ul>
@@ -87,20 +87,6 @@
           </div>
         </div>
 
-        <div class="mt-5 border-t border-gray-100 pt-5">
-          <p class="text-sm font-medium text-gray-700 mb-3">表示するプロバイダー</p>
-          <div class="flex flex-wrap gap-3">
-            <label v-for="(svc, company) in services" :key="company"
-                   class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border transition-colors select-none"
-                   :class="selectedCompanies.includes(company)
-                     ? 'border-blue-400 bg-blue-50 text-blue-900'
-                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'">
-              <input type="checkbox" :value="company" v-model="selectedCompanies"
-                     class="text-blue-600 focus:ring-blue-500"/>
-              <span class="text-sm">{{ company }}</span>
-            </label>
-          </div>
-        </div>
 
         <div class="mt-4 flex items-center gap-3 text-sm text-gray-600">
           <span v-if="exchangeRateLoading" class="flex items-center gap-1.5">
@@ -124,6 +110,31 @@
 
       <!-- 結果テーブル -->
       <div v-if="calculated">
+        <!-- 絞り込み: 何も選んでいない＝すべて。選ぶと「それだけ」 -->
+        <div class="mb-4 bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-3 space-y-2">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-xs font-medium text-gray-500 mr-1">会社</span>
+            <button type="button" @click="pickedCompanies = []"
+                    class="px-3 py-1 rounded-full border text-sm transition-colors"
+                    :class="pickedCompanies.length === 0
+                      ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'">
+              すべて
+            </button>
+            <button v-for="c in Object.keys(services)" :key="c" type="button" @click="togglePick(c)"
+                    class="px-3 py-1 rounded-full border text-sm transition-colors inline-flex items-center gap-1.5"
+                    :class="pickedCompanies.includes(c)
+                      ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'">
+              <i v-if="pickedCompanies.includes(c)" class="fas fa-check text-[10px] text-blue-500"></i>
+              {{ c }}
+              <span class="text-xs tabular-nums"
+                    :class="pickedCompanies.includes(c) ? 'text-blue-500' : 'text-gray-400'">{{ countByCompany[c] || 0 }}</span>
+            </button>
+          </div>
+          <p class="text-xs text-gray-400">会社を選ぶとそれだけに絞り込みます（複数可）。「すべて」で解除。</p>
+        </div>
+
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -163,7 +174,7 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="sortedModels.length === 0">
                   <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-400">
-                    表示するプロバイダーを選択してください
+                    該当するモデルがありません
                   </td>
                 </tr>
                 <tr v-for="model in sortedModels" :key="model.company + '/' + model.name"
@@ -219,7 +230,7 @@
               <li><strong>Imagen 4 は Vertex AI の料金</strong>で、Gemini Developer API の価格表には掲載がありません（$0.02 / $0.04 / $0.06 は二次情報に基づく参考値）。</li>
               <li><strong>一次提供元のみ掲載</strong>: fal / Replicate / Together 等のアグリゲータは同じモデルでもホストごとに価格が異なるため、モデル提供元の公式価格に統一しています。</li>
               <li><strong>Midjourney は未収録</strong>: 従量課金ではなく<strong>サブスク</strong>（Basic $10/月〜）のため、$/枚の表に混ぜると比較が歪みます。</li>
-              <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えたためです。<strong>Gemini 2.5 Flash Image も 2026-10-02 に EOL 到達したため削除</strong>しました。</li>
+              <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えたためです。<strong>Gemini 2.5 Flash Image</strong> は当初 2026-10-02 廃止とされていましたが <strong>2027-03-15 に延期</strong>されたため掲載しています（後継の推奨は Gemini 3.1 Flash Lite Image）。</li>
               <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://www.frankfurter.app/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥150 を使用します。</li>
               <li>料金は変動します。確定は各プロバイダの usage 表示を参照してください。</li>
             </ul>
@@ -242,7 +253,7 @@
             exchangeRate: 150,
             exchangeRateDate: null,
             exchangeRateLoading: true,
-            selectedCompanies: [],
+            pickedCompanies: [],   // 空 = すべて表示
 
             // ▼各社公式の Standard 価格。テキストからの新規生成、$/枚。
             services: {
@@ -266,7 +277,9 @@
                 models: {
                   "Gemini 3 Pro Image (Nano Banana Pro)":        { perImage: 0.134,  res: "1K–2K" },
                   "Gemini 3.1 Flash Image (Nano Banana 2)":      { perImage: 0.067,  res: "1K" },
+                  "Gemini Nano Banana 2.1":                      { perImage: 0.0336, res: "1K" },
                   "Gemini 3.1 Flash Lite Image (NB2 Lite)":      { perImage: 0.0336, res: "1K" },
+                  "Gemini 2.5 Flash Image":                      { perImage: 0.039,  res: "1K", eol: "2027-03-15" },
                   "Imagen 4 Fast (Vertex・参考値)":               { perImage: 0.02,   res: "1024×1024" },
                   "Imagen 4 Standard (Vertex・参考値)":           { perImage: 0.04,   res: "1024×1024" },
                   "Imagen 4 Ultra (Vertex・参考値)":              { perImage: 0.06,   res: "1024×1024" },
@@ -278,19 +291,23 @@
                 price_url: "https://docs.x.ai/developers/pricing",
                 // 定額/枚。img2img は入力画像1枚につき +$0.01。
                 models: {
-                  "Grok Imagine Image 2.0":                { perImage: 0.04, res: "1K / 2K" },
-                  "Grok Imagine Image 2.0 (Quality Mode)": { perImage: 0.05, res: "1K / 2K" },
+                  "Grok Imagine Image":     { perImage: 0.02, res: "1K" },
+                  "Grok Imagine Image 2.0": { perImage: 0.04, res: "1K / 2K" },
                 },
               },
 
               "Black Forest Labs": {
                 site_url: "https://bfl.ai",
                 price_url: "https://bfl.ai/pricing",
-                // 定額/枚。Flux.2 Pro の編集は生成より高め（約 $0.045/MP）。
+                // FLUX 3 は $/枚（解像度別）、FLUX.2 は $/MP（1MP 目の単価を掲載）。FLUX.1 は前世代のため未収録。
                 models: {
-                  "FLUX.2 [schnell]": { perImage: 0.015, res: "1MP" },
-                  "FLUX.2 [dev]":     { perImage: 0.025, res: "1MP" },
-                  "FLUX.2 [pro]":     { perImage: 0.05,  res: "1MP" },
+                  "FLUX 3 Image":        { perImage: 0.048, res: "1K" },
+                  "FLUX 3 Image Klein":  { perImage: 0.009, res: "1K" },
+                  "FLUX.2 [max]":        { perImage: 0.07,  res: "1MP" },
+                  "FLUX.2 [pro]":        { perImage: 0.03,  res: "1MP" },
+                  "FLUX.2 [flex]":       { perImage: 0.05,  res: "1MP" },
+                  "FLUX.2 [klein] 9B":   { perImage: 0.015, res: "1MP" },
+                  "FLUX.2 [klein] 4B":   { perImage: 0.014, res: "1MP" },
                 },
               },
 
@@ -325,7 +342,6 @@
         },
 
         async mounted() {
-          this.selectedCompanies = Object.keys(this.services);
           try {
             const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY');
             const data = await res.json();
@@ -339,29 +355,32 @@
         },
 
         computed: {
+          // 会社フィルタを通った行（ソート前）
+          visibleRows() {
+            const out = [];
+            for (const company in this.results) {
+              if (this.pickedCompanies.length && !this.pickedCompanies.includes(company)) continue;
+              for (const m of this.results[company]) out.push({ ...m, company });
+            }
+            return out;
+          },
+
+          // 最安比は「いま表示している中」で計算する
           minCostUSD() {
             let min = Infinity;
-            for (const c in this.results) {
-              for (const m of this.results[c]) {
-                if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
-              }
-            }
+            for (const m of this.visibleRows) if (m.costUSD > 0 && m.costUSD < min) min = m.costUSD;
             return min === Infinity ? 0 : min;
+          },
+
+          countByCompany() {
+            const c = {};
+            for (const company in this.results) c[company] = this.results[company].length;
+            return c;
           },
 
           sortedModels() {
             const min = this.minCostUSD;
-            const flat = [];
-            for (const company in this.results) {
-              if (!this.selectedCompanies.includes(company)) continue;
-              for (const model of this.results[company]) {
-                flat.push({
-                  ...model,
-                  company,
-                  ratio: min > 0 ? model.costUSD / min : 1,
-                });
-              }
-            }
+            const flat = this.visibleRows.map(m => ({ ...m, ratio: min > 0 ? m.costUSD / min : 1 }));
             const dir = this.sortDirection === 'asc' ? 1 : -1;
             return flat.sort((a, b) => {
               if (this.sortColumn === 'eol') {
@@ -378,6 +397,12 @@
         },
 
         methods: {
+          togglePick(c) {
+            const i = this.pickedCompanies.indexOf(c);
+            if (i >= 0) this.pickedCompanies.splice(i, 1);
+            else this.pickedCompanies.push(c);
+          },
+
           sortBy(col) {
             if (this.sortColumn === col) {
               this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
