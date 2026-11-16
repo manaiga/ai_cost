@@ -119,7 +119,7 @@
 
 ### 画像生成
 - OpenAI: https://developers.openai.com/api/docs/pricing
-- Google: https://aistudio.google.com/docs/pricing （Imagen 4 は Vertex AI 側で、ここには無い）
+- Google: https://aistudio.google.com/docs/pricing （Imagen 4 は Gemini API で 2026-08-17 に提供終了。Vertex の参考値は二次情報だったため 2026-11 に削除）
 - xAI: https://docs.x.ai/developers/pricing
 - Black Forest Labs: https://bfl.ai/pricing
 - Stability AI: https://platform.stability.ai/pricing
@@ -141,4 +141,5 @@
 ## 技術仕様
 - Vue.js 3 + Tailwind CSS（いずれも CDN 読み込み、ビルド不要）
 - 各ページは単一の HTML ファイルで完結（共通化はしていない）
+- 会社名の頭のアイコンは各社サイトのファビコンを `icons/` に同梱（外部サービスに実行時に取りに行かない）。会社を追加したら各ページの `companyIcons` にも足す
 - 為替レート: [Frankfurter API](https://frankfurter.dev/)（ECB レート、`api.frankfurter.dev/v1`）から自動取得、失敗時は ¥160 にフォールバックし画面に「取得失敗」と表示。旧アドレス `api.frankfurter.app` は 301 転送になりブラウザでは失敗する（これで長く ¥150 固定になっていた）。週次更新ではレートが実際に取れているかも確認する

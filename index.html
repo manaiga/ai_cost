@@ -172,6 +172,7 @@
                       ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'">
               <i v-if="pickedCompanies.includes(c)" class="fas fa-check text-[10px] text-blue-500"></i>
+              <img v-if="companyIcons[c]" :src="companyIcons[c]" alt="" class="w-4 h-4 rounded-sm shrink-0" width="16" height="16"/>
               {{ c }}
               <span class="text-xs tabular-nums"
                     :class="pickedCompanies.includes(c) ? 'text-blue-500' : 'text-gray-400'">{{ countByCompany[c] || 0 }}</span>
@@ -274,7 +275,7 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
-                       class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
+                       class="inline-flex items-center gap-1.5 hover:text-blue-600 hover:underline"><img v-if="companyIcons[model.company]" :src="companyIcons[model.company]" alt="" class="w-4 h-4 rounded-sm shrink-0" width="16" height="16"/>{{ model.company }}</a>
                   </td>
                   <td class="px-4 py-3 text-sm font-medium text-gray-900">
                     {{ model.name }}
@@ -365,6 +366,14 @@
             sortColumn: 'costUSD',
             sortDirection: 'asc',
             pickedCompanies: [],   // 空 = すべて表示
+            // 会社名の頭に出すアイコン（各社サイトのファビコンを icons/ に同梱）
+            companyIcons: {
+              OpenAI: "icons/openai.png", Claude: "icons/claude.png", Google: "icons/google.png",
+              DeepSeek: "icons/deepseek.png", xAI: "icons/xai.png", "AWS Bedrock": "icons/aws.png",
+              "Black Forest Labs": "icons/bfl.png", "Stability AI": "icons/stability.png",
+              Ideogram: "icons/ideogram.png", Recraft: "icons/recraft.png",
+              ElevenLabs: "icons/elevenlabs.png", Deepgram: "icons/deepgram.jpg",
+            },
             baseKey: null,         // 比較の基準（×1）に選んだ行（"会社/モデル名"）。null = 表示中の最安
             latestOnly: false,
             // ▼各社公式 Pricing の Standard（$/1M tokens）。出典 URL は各 price_url。

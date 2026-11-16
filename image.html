@@ -129,6 +129,7 @@
                       ? 'border-blue-400 bg-blue-50 text-blue-900 font-medium'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'">
               <i v-if="pickedCompanies.includes(c)" class="fas fa-check text-[10px] text-blue-500"></i>
+              <img v-if="companyIcons[c]" :src="companyIcons[c]" alt="" class="w-4 h-4 rounded-sm shrink-0" width="16" height="16"/>
               {{ c }}
               <span class="text-xs tabular-nums"
                     :class="pickedCompanies.includes(c) ? 'text-blue-500' : 'text-gray-400'">{{ countByCompany[c] || 0 }}</span>
@@ -224,7 +225,7 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                     <a :href="services[model.company].price_url" target="_blank" rel="noopener noreferrer"
-                       class="hover:text-blue-600 hover:underline">{{ model.company }}</a>
+                       class="inline-flex items-center gap-1.5 hover:text-blue-600 hover:underline"><img v-if="companyIcons[model.company]" :src="companyIcons[model.company]" alt="" class="w-4 h-4 rounded-sm shrink-0" width="16" height="16"/>{{ model.company }}</a>
                   </td>
                   <td class="px-4 py-3 text-sm font-medium text-gray-900">
                     {{ model.name }}
@@ -277,7 +278,6 @@
               <li><strong>単価の前提</strong>: 各公式の <strong>Standard</strong> 価格、<strong>テキストからの新規生成</strong>。Batch を使えば概ね半額です。編集 / img2img は別料金の場合があります（xAI は入力画像1枚につき +$0.01）。</li>
               <li><strong>$/枚への換算</strong>: OpenAI と Gemini は<strong>トークン課金</strong>のため、公式が示す代表的な1枚あたりの消費量で $/枚 に換算しています。実際のプロンプトや出力内容で前後します。</li>
               <li><strong>基準解像度</strong>: その単価が成立する解像度です。4K など高解像度では 2〜4倍になります（例: Nano Banana Pro は 1K/2K $0.134 → 4K $0.24）。</li>
-              <li><strong>Imagen 4 は Vertex AI の料金</strong>で、Gemini Developer API の価格表には掲載がありません（$0.02 / $0.04 / $0.06 は二次情報に基づく参考値）。</li>
               <li><strong>一次提供元のみ掲載</strong>: fal / Replicate / Together 等のアグリゲータは同じモデルでもホストごとに価格が異なるため、モデル提供元の公式価格に統一しています。</li>
               <li><strong>Midjourney は未収録</strong>: 従量課金ではなく<strong>サブスク</strong>（Basic $10/月〜）のため、$/枚の表に混ぜると比較が歪みます。</li>
               <li><strong>Amazon Nova Canvas は未収録</strong>: 2026-09-30 に EOL を迎えたためです。<strong>Gemini 2.5 Flash Image</strong> は当初 2026-10-02 廃止とされていましたが <strong>2027-03-15 に延期</strong>されたため掲載しています（後継の推奨は Gemini 3.1 Flash Lite Image）。</li>
@@ -304,6 +304,14 @@
             exchangeRateDate: null,
             exchangeRateLoading: true,
             pickedCompanies: [],   // 空 = すべて表示
+            // 会社名の頭に出すアイコン（各社サイトのファビコンを icons/ に同梱）
+            companyIcons: {
+              OpenAI: "icons/openai.png", Claude: "icons/claude.png", Google: "icons/google.png",
+              DeepSeek: "icons/deepseek.png", xAI: "icons/xai.png", "AWS Bedrock": "icons/aws.png",
+              "Black Forest Labs": "icons/bfl.png", "Stability AI": "icons/stability.png",
+              Ideogram: "icons/ideogram.png", Recraft: "icons/recraft.png",
+              ElevenLabs: "icons/elevenlabs.png", Deepgram: "icons/deepgram.jpg",
+            },
             latestOnly: false,     // 各系列の最新だけ（テキストのページと設定を共有）
             baseKey: null,         // 比較の基準（×1）に選んだ行（"会社/モデル名"）。null = 表示中の最安
 
@@ -328,16 +336,12 @@
                 site_url: "https://ai.google.dev",
                 price_url: "https://ai.google.dev/gemini-api/docs/pricing",
                 // Gemini 系はトークン課金（画像出力 $30〜$120/M）。公式が併記する $/枚 を採用。
-                // Imagen 4 は Vertex AI 側の料金で、Gemini API 価格表には非掲載（参考値）。
                 models: {
                   "Gemini 3 Pro Image (Nano Banana Pro)":        { perImage: 0.134,  res: "1K–2K", released: "2026-05-28" },
                   "Gemini 3.1 Flash Image (Nano Banana 2)":      { perImage: 0.067,  res: "1K", released: "2026-05-28" },
                   "Gemini Nano Banana 2.1":                      { perImage: 0.0336, res: "1K", released: "2026-10-06" },
                   "Gemini 3.1 Flash Lite Image (NB2 Lite)":      { perImage: 0.0336, res: "1K", released: "2026-06-30" },
                   "Gemini 2.5 Flash Image":                      { perImage: 0.039,  res: "1K", eol: "2027-03-15", released: "2025-10-02" },
-                  "Imagen 4 Fast (Vertex・参考値)":               { perImage: 0.02,   res: "1024×1024", released: "2025-06-24" },
-                  "Imagen 4 Standard (Vertex・参考値)":           { perImage: 0.04,   res: "1024×1024", released: "2025-06-24" },
-                  "Imagen 4 Ultra (Vertex・参考値)":              { perImage: 0.06,   res: "1024×1024", released: "2025-06-24" },
                 },
               },
 
