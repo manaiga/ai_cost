@@ -399,6 +399,8 @@
                 本ページの分析どおり音声トークン課金は日本語で割高になるため、
                 <strong>日本語用途では単純な置き換えで費用が跳ねます</strong>（読み上げタブで両方を比較してください）。
                 API の形も変わるためドロップイン置換にはなりません。</li>
+              <li><strong>分課金のリアルタイムは LLM 代が別</strong>: ElevenLabs Realtime v1 Mini / Max は $0.08/分 に
+                <strong>LLM 利用料が別途</strong>かかり、OpenAI gpt-live-1 も裏側のモデル・ツール利用は別課金です。表の値は下限として見てください。</li>
               <li><strong>ElevenLabs のサブスク枠は未考慮</strong>: 本表は API の従量課金単価です。
                 月額プランに含まれるクレジット内で収まる場合は実費が下がります。</li>
               <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://frankfurter.dev/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥160（2026-11 時点の水準）を仮に使用し、画面に「取得失敗」と表示します。</li>
@@ -530,6 +532,11 @@
                   "Gemini 3.8 Live":                  { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, released: "2026-09-15" },
                   "Gemini 2.5 Flash Native Audio":    { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, eol: "2027-03-31", successor: "Gemini 3.8 Live", released: "2025-12-12" },
                   "Gemini 3.5 Live Translate":        { audioInPerMTok: 3.50, audioOutPerMTok: 21.00, released: "2026-06" },
+                },
+                ElevenLabs: {
+                  // Eleven Realtime（OpenAI Realtime 互換の Speech to Speech）。$0.08/分 に LLM 利用料が別途かかる
+                  "Eleven Realtime v1 Mini (+LLM 別途)": { perMin: 0.08, released: "2026-10-19" },
+                  "Eleven Realtime v1 Max (+LLM 別途)":  { perMin: 0.08, released: "2026-10-19" },
                 },
               },
             },
