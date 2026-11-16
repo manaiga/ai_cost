@@ -382,7 +382,8 @@
                 AIがよく喋る設計ほど高くなります。既定は 50:50 です。</li>
               <li><strong>期間限定・プロモ</strong>: Gemini 3.8 Flash TTS / Flash-Lite TTS は 2026-12-31 までの価格で、
                 2027-01-01 に<strong>倍増</strong>します（$9→$18、$6→$12 / 1M音声出力トークン）。
-                Deepgram の Nova-3 ストリーミングも期間限定価格です。</li>
+                Deepgram の Nova-3 ストリーミングと Flux STT English も期間限定価格です（Flux STT English の定価は $0.0077/分）。
+                Deepgram Flux TTS は 2026-12-31 まで支払額と同額のクレジットが付きます（上限 $500。表の単価は定価のまま）。</li>
               <li><strong>一次提供元の公式価格のみ</strong>掲載しています。AssemblyAI など公式ページで裏取りできなかった
                 プロバイダーは、数値が出典間で食い違うため未収録です。</li>
               <li><strong>EOL（提供終了）</strong>: OpenAI の音声系は廃止が進んでいます。
@@ -479,6 +480,7 @@
                   "Eleven Flash / Turbo": { perMChar: 40.00 },
                 },
                 Deepgram: {
+                  "Flux TTS": { perMChar: 45.00, released: "2026-08-12" }, // 2026-12-31 まで支払額と同額のクレジット付与（上限 $500）。単価は定価
                   "Aura-1": { perMChar: 15.00 },
                   "Aura-2": { perMChar: 30.00, released: "2025-04-15" },
                 },
@@ -510,6 +512,9 @@
                   "Nova-3 Multi (pre-recorded)":  { perMin: 0.0052, released: "2025-02-12" },
                   "Nova-3 Mono (streaming・promo)":  { perMin: 0.0048, released: "2025-02-12" },
                   "Nova-3 Multi (streaming・promo)": { perMin: 0.0058, released: "2025-02-12" },
+                  // Flux STT はストリーミング専用（会話の区切り検出付き）。English はプロモ価格（定価 $0.0077）
+                  "Flux STT English (streaming・promo)": { perMin: 0.0065, released: "2025-10-01" },
+                  "Flux STT Multilingual (streaming)":   { perMin: 0.0078, released: "2026-04-15" },
                 },
               },
 
