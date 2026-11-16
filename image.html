@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの画像生成 API使用料計算機（2026-11-14 更新）</title>
+    <title>生成AIの画像生成 API使用料計算機（2026-11-16 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -33,7 +33,7 @@
         生成AIの画像生成 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年11月14日（
+        最終更新日: 2026年11月16日（
         <a href="https://platform.openai.com/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://docs.x.ai/developers/pricing" class="text-blue-600 hover:underline">xAI</a> /
@@ -388,6 +388,7 @@
                 price_url: "https://www.recraft.ai/docs",
                 // 2026-07-31 に値下げ。
                 models: {
+                  "Recraft V4.1 Flash V2": { perImage: 0.007, res: "1K", released: "2026-11" }, // ラスターのみ・スタイル指定不可
                   "Recraft V4.1":     { perImage: 0.035, res: "1024×1024", released: "2026-05" },
                   "Recraft V4.1 Pro": { perImage: 0.21,  res: "1024×1024", released: "2026-05" },
                 },

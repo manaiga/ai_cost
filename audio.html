@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの音声 API使用料計算機（2026-11-14 更新）</title>
+    <title>生成AIの音声 API使用料計算機（2026-11-16 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -33,7 +33,7 @@
         生成AIの音声 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年11月14日（
+        最終更新日: 2026年11月16日（
         <a href="https://developers.openai.com/api/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://elevenlabs.io/pricing/api" class="text-blue-600 hover:underline">ElevenLabs</a> /
@@ -388,7 +388,9 @@
               <li><strong>EOL（提供終了）</strong>: OpenAI の音声系は廃止が進んでいます。
                 <strong>tts-1 / tts-1-hd / gpt-4o-mini-tts は 2027-01-06</strong>、
                 <strong>whisper-1 / gpt-4o-transcribe / gpt-4o-mini-transcribe は 2027-02-26</strong>、
-                <strong>gpt-audio-mini は 2027-01-20</strong> に API から削除されます。</li>
+                <strong>gpt-audio-mini は 2027-01-20</strong> に API から削除されます。
+                Google も <strong>Gemini 2.5 Flash / Pro Preview TTS が 2026-12-18</strong>（後継は 3.8 Flash TTS / Flash-Lite TTS）、
+                <strong>Gemini 2.5 Flash Native Audio が 2027-03-31</strong>（後継は 3.8 Live）に提供終了予定です。</li>
               <li><strong>移行先で課金方式が変わる点に注意</strong>:
                 OpenAI が tts-1 の後継に挙げているのは <code class="text-xs bg-gray-100 px-1 rounded">gpt-realtime-2.1-mini</code> で、
                 これは <code class="text-xs bg-gray-100 px-1 rounded">/v1/audio/speech</code> ではなく Realtime API のモデルです。
@@ -466,8 +468,8 @@
                   // 3.8 系は 2026-12-31 までの価格。2027-01-01 に倍増（$9→$18 / $6→$12）
                   "Gemini 3.8 Flash TTS (〜12/31)":      { textInPerMTok: 0.50, audioOutPerMTok: 9.00, released: "2026-09-22" },
                   "Gemini 3.8 Flash-Lite TTS (〜12/31)": { textInPerMTok: 0.50, audioOutPerMTok: 6.00, released: "2026-09-22" },
-                  "Gemini 2.5 Flash Preview TTS":        { textInPerMTok: 0.50, audioOutPerMTok: 10.00, released: "2025-05-20" },
-                  "Gemini 2.5 Pro Preview TTS":          { textInPerMTok: 1.00, audioOutPerMTok: 20.00, released: "2025-05-20" },
+                  "Gemini 2.5 Flash Preview TTS":        { textInPerMTok: 0.50, audioOutPerMTok: 10.00, eol: "2026-12-18", successor: "Gemini 3.8 Flash TTS", released: "2025-05-20" },
+                  "Gemini 2.5 Pro Preview TTS":          { textInPerMTok: 1.00, audioOutPerMTok: 20.00, eol: "2026-12-18", successor: "Gemini 3.8 Flash TTS", released: "2025-05-20" },
                 },
                 ElevenLabs: {
                   "Eleven v4":            { perMChar: 80.00, released: "2026-09" },
@@ -521,7 +523,7 @@
                 },
                 Google: {
                   "Gemini 3.8 Live":                  { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, released: "2026-09-15" },
-                  "Gemini 2.5 Flash Native Audio":    { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, released: "2025-12-12" },
+                  "Gemini 2.5 Flash Native Audio":    { audioInPerMTok: 3.00, audioOutPerMTok: 12.00, eol: "2027-03-31", successor: "Gemini 3.8 Live", released: "2025-12-12" },
                   "Gemini 3.5 Live Translate":        { audioInPerMTok: 3.50, audioOutPerMTok: 21.00, released: "2026-06" },
                 },
               },
