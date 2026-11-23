@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>生成AIの音声 API使用料計算機（2026-11-16 更新）</title>
+    <title>生成AIの音声 API使用料計算機（2026-11-23 更新）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
@@ -33,7 +33,7 @@
         生成AIの音声 API使用料計算機
       </h1>
       <p class="text-sm text-gray-600 mb-6">
-        最終更新日: 2026年11月16日（
+        最終更新日: 2026年11月23日（
         <a href="https://developers.openai.com/api/docs/pricing" class="text-blue-600 hover:underline">OpenAI</a> /
         <a href="https://ai.google.dev/gemini-api/docs/pricing" class="text-blue-600 hover:underline">Gemini API</a> /
         <a href="https://elevenlabs.io/pricing/api" class="text-blue-600 hover:underline">ElevenLabs</a> /
@@ -401,7 +401,7 @@
                 <strong>日本語用途では単純な置き換えで費用が跳ねます</strong>（読み上げタブで両方を比較してください）。
                 API の形も変わるためドロップイン置換にはなりません。</li>
               <li><strong>分課金のリアルタイムは LLM 代が別</strong>: ElevenLabs Realtime v1 Mini / Max は $0.08/分 に
-                <strong>LLM 利用料が別途</strong>かかり、OpenAI gpt-live-1 も裏側のモデル・ツール利用は別課金です。表の値は下限として見てください。</li>
+                <strong>LLM 利用料が別途</strong>かかり、OpenAI gpt-live-1 / 1.1 も裏側のモデル・ツール利用は別課金です（gpt-live は無音で待機中のスタンバイが $0.02/分）。表の値は下限として見てください。</li>
               <li><strong>ElevenLabs のサブスク枠は未考慮</strong>: 本表は API の従量課金単価です。
                 月額プランに含まれるクレジット内で収まる場合は実費が下がります。</li>
               <li><strong>為替レート</strong>: ページ読み込み時に <a href="https://frankfurter.dev/" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Frankfurter API</a>（ECB レート）から自動取得。取得失敗時は ¥160（2026-11 時点の水準）を仮に使用し、画面に「取得失敗」と表示します。</li>
@@ -535,6 +535,7 @@
                   "gpt-realtime-2.1-mini": { audioInPerMTok: 10.00, audioOutPerMTok: 20.00, released: "2026-07" },
                   "gpt-audio-1.5":         { audioInPerMTok: 32.00, audioOutPerMTok: 64.00 },
                   "gpt-audio-mini":        { audioInPerMTok: 10.00, audioOutPerMTok: 20.00, eol: "2027-01-20", successor: "gpt-audio-1.5", released: "2025-10-06" },
+                  "gpt-live-1.1 (セッション定額)": { perMin: 0.05, released: "2026-11-19" },
                   "gpt-live-1 (セッション定額)": { perMin: 0.05, released: "2026-09-10" },
                 },
                 Google: {
